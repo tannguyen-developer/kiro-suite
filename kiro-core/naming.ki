@@ -1,0 +1,93 @@
+# kiro-suite/kiro-core/naming.ki
+
+META:
+NAME=global_naming_standards
+VERSION=1
+PURPOSE=predictable_discoverable_and_searchable_names
+SCOPE=all_languages_all_engineers
+MODE=machine_first
+FORMAT=directive_rules_priority_flags
+
+##################################################
+# GENERAL PRINCIPLES
+##################################################
+
+NAME=reveal_intent_not_implementation
+NAME=pronounceable_and_searchable
+NAME=avoid_disinformation_or_misleading_terms
+NAME=length_proportional_to_scope_size
+NAME=consistency_over_personal_preference
+
+RULE=single_letter_variable->only_in_short_loops
+RULE=cryptic_abbreviation->expand_to_full_word
+RULE=acronyms_in_names->treat_as_words_or_keep_uppercase_consistently
+
+##################################################
+# SEMANTICS & TYPES
+##################################################
+
+SEM_BOOL=prefix_with_is_has_can_should_will
+SEM_ARRAY=use_plural_nouns_or_list_suffix
+SEM_MAP=name_by_key_to_value_relationship
+SEM_FUNC=start_with_strong_action_verb
+SEM_CLASS=use_noun_or_noun_phrase
+SEM_INTERFACE=use_adjective_or_noun_based_on_language_norm
+SEM_EVENT=use_past_tense_verb
+
+RULE=boolean_without_prefix->add_is_has_can_prefix
+RULE=function_returns_boolean->must_sound_like_question
+RULE=collection_named_singular->rename_to_plural
+RULE=event_named_present_tense->rename_to_past_tense
+
+##################################################
+# ACTION VERBS (STANDARDIZATION)
+##################################################
+
+VERB_GET=return_local_or_fast_computed_value
+VERB_FETCH=retrieve_over_network_or_io
+VERB_COMPUTE=heavy_cpu_calculation
+VERB_CREATE=instantiate_new_object_in_memory
+VERB_BUILD=construct_complex_object_step_by_step
+VERB_PARSE=convert_raw_data_to_structured_format
+VERB_FORMAT=convert_structured_data_to_raw_string
+VERB_SAVE=persist_to_storage
+VERB_DELETE=remove_permanently_from_storage
+VERB_REMOVE=take_out_from_collection_or_relation
+VERB_UPDATE=modify_existing_record
+VERB_UPSERT=update_or_insert_if_not_exists
+
+RULE=network_call_named_get->rename_to_fetch
+RULE=cpu_heavy_named_get->rename_to_compute
+RULE=delete_from_array_named_delete->rename_to_remove
+
+##################################################
+# CASING & FORMATTING DEFAULTS
+##################################################
+
+# Note: These adapt to specific language conventions,
+# but the rule is consistency within the ecosystem.
+CASE=consistency_with_language_standard_first
+CASE_FILE_WEB=kebab-case_preferred_for_urls_and_assets
+CASE_CLASS=PascalCase_universal_standard
+CASE_CONST=UPPER_SNAKE_CASE_universal_standard
+CASE_ENV_VAR=UPPER_SNAKE_CASE_universal_standard
+
+RULE=mixed_casing_in_project->enforce_linter_standard
+RULE=file_name_contains_spaces->replace_with_dashes_or_underscores
+
+##################################################
+# ANTI-PATTERNS & BANNED WORDS
+##################################################
+
+BAN=avoid_manager_unless_clear_domain_term
+BAN=avoid_util_unless_pure_functions
+BAN=avoid_helper_unless_strictly_scoped
+BAN=avoid_data_info_as_suffix_too_vague
+BAN=avoid_temp_val_res_obj_as_variable_names
+BAN=avoid_hungarian_notation_in_modern_languages
+BAN=avoid_profanity_or_offensive_terms
+BAN=avoid_inside_jokes
+
+RULE=class_named_data->rename_to_describe_what_data
+RULE=class_named_manager->rename_to_describe_action_like_builder_or_coordinator
+RULE=variable_named_temp->rename_to_describe_purpose
