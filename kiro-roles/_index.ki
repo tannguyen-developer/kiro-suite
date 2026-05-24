@@ -1,0 +1,181 @@
+# kiro-suite/kiro-roles/_index.ki
+
+META:
+NAME=kiro_roles_index
+VERSION=1.0.0
+PURPOSE=manifest_shared_model_and_system_rules_for_kiro_roles_layer
+SCOPE=all_roles_all_systems_all_ai_execution_contexts
+MODE=machine_first
+FORMAT=directive_rules_priority_flags
+PARENT=kiro-core@1
+INHERITANCE=full
+OVERRIDE_POLICY=kiro-core_always_wins
+CONFLICT_RESOLUTION=escalate_per_glossary.ki:r01
+
+##################################################
+# LAYER DECLARATION
+##################################################
+
+LAYER=secondary
+DEPENDS_ON=kiro-core/principles.ki
+DEPENDS_ON=kiro-core/security.ki
+DEPENDS_ON=kiro-core/workflow.ki
+DEPENDS_ON=kiro-core/coding.ki
+DEPENDS_ON=kiro-core/architecture.ki
+DEPENDS_ON=kiro-core/quality.ki
+DEPENDS_ON=kiro-core/naming.ki
+DEPENDS_ON=kiro-core/docs.ki
+DEPENDS_ON=kiro-core/glossary.ki
+
+NOTE=all_kiro-core_rules_are_globally_inherited_and_not_redefined_here
+NOTE=this_file_extends_not_replaces_kiro-core
+NOTE=glossary.ki_aliases_used_throughout_without_redefinition
+
+##################################################
+# ROLE SYSTEM MODEL
+##################################################
+
+MODEL=rbac
+MODEL_EXT=responsibility_and_execution_context_per_role
+ROLE_UNIT=atomic_named_actor_with_defined_boundary
+ROLE_SCOPE=applies_to_human_agents_and_ai_agents
+PERMISSION_MODEL=deny_by_default_allow_by_explicit_grant
+PERMISSION_INHERIT=kiro-core/security.ki:SEC_CORE=deny_by_default_allow_by_exception
+PERMISSION_INHERIT=kiro-core/principles.ki:SEC=least_privilege
+
+AXIOM=no_role_may_override_kiro-core_constraints
+AXIOM=no_role_may_grant_permissions_beyond_its_own_boundary
+AXIOM=ambiguity_in_role_boundary->apply_glossary.ki:r01
+AXIOM=role_conflict->apply_kiro-core/principles.ki:P01_through_P10_priority_order
+
+##################################################
+# ROLE REGISTRY
+##################################################
+
+# format: ROLE=<alias>  FILE=roles/<alias>.ki  CAT=<category_id>
+
+ROLE=pm       FILE=roles/pm.ki       CAT=01
+ROLE=po       FILE=roles/po.ki       CAT=01
+ROLE=ba       FILE=roles/ba.ki       CAT=01
+ROLE=sm       FILE=roles/sm.ki       CAT=01
+
+ROLE=swe      FILE=roles/swe.ki      CAT=03
+ROLE=fe_e     FILE=roles/fe_e.ki     CAT=03
+ROLE=be_e     FILE=roles/be_e.ki     CAT=03
+
+ROLE=tl       FILE=roles/tl.ki       CAT=04
+ROLE=arch     FILE=roles/arch.ki     CAT=04
+
+ROLE=de       FILE=roles/de.ki       CAT=05
+ROLE=ml_e     FILE=roles/ml_e.ki     CAT=05
+ROLE=ai_e     FILE=roles/ai_e.ki     CAT=05
+ROLE=prompt_e FILE=roles/prompt_e.ki CAT=05
+
+ROLE=qa       FILE=roles/qa.ki       CAT=06
+ROLE=gate_k   FILE=roles/gate_k.ki   CAT=06
+
+ROLE=devops   FILE=roles/devops.ki   CAT=07
+ROLE=sre      FILE=roles/sre.ki      CAT=07
+
+ROLE=sec      FILE=roles/sec.ki      CAT=08
+ROLE=aud      FILE=roles/aud.ki      CAT=08
+
+ROLE=tech_w   FILE=roles/tech_w.ki   CAT=09
+ROLE=rel_m    FILE=roles/rel_m.ki    CAT=09
+
+##################################################
+# ROLE CATEGORIES
+##################################################
+
+CAT_01=strategy_and_requirements
+MEMBERS_01=pm,po,ba,sm,agile_coach,ux_r
+
+CAT_02=design_and_experience
+MEMBERS_02=pd,uxui_e,ux_e,ui_e,ui_d,anim_d
+
+CAT_03=core_engineering
+MEMBERS_03=swe,fe_e,be_e,fs_e,mob_e,ios_e,and_e,desktop_e,web3_e,game_e,embed_e
+
+CAT_04=architecture_and_leadership
+MEMBERS_04=arch,sol_arch,ent_arch,cloud_arch,tl,em
+
+CAT_05=data_ai_ml
+MEMBERS_05=de,ds,da,ml_e,ai_e,prompt_e,db_a,nlp_e
+
+CAT_06=quality_and_testing
+MEMBERS_06=qa,qc,sdet,auto_qa,man_qa,perf_qa,rvw,gate_k
+
+CAT_07=infrastructure_and_operations
+MEMBERS_07=devops,sre,pe,sys_a,net_e,cloud_e,noc
+
+CAT_08=security_and_compliance
+MEMBERS_08=sec,app_sec,cloud_sec,pen_t,aud,soc,iam_e
+
+CAT_09=specialized_support
+MEMBERS_09=rel_m,tech_w,dev_rel,loc_e,build_e,finops
+
+##################################################
+# ROLE INTERACTION RULES
+##################################################
+
+INTERACT=roles_communicate_via_tickets_prs_and_documented_decisions
+INTERACT=no_role_may_unilaterally_override_another_roles_domain
+INTERACT=cross_domain_decisions_require_explicit_sign_off_from_affected_roles
+INTERACT=escalation_path=role->tl->arch->em->sec_if_security_related
+
+RULE=pm_requests_scope_change->tl_must_assess_technical_impact
+RULE=arch_mandates_pattern->tl_and_swe_must_implement
+RULE=sec_blocks_release->only_sec_or_above_can_unblock
+RULE=qa_blocks_release->po_or_pm_may_accept_risk_with_written_sign_off
+RULE=gate_k_blocks_pr->author_must_resolve_not_bypass
+RULE=sre_declares_incident->all_roles_defer_to_incident_commander
+RULE=aud_requests_evidence->all_roles_must_comply_within_sla
+RULE=ai_e_deploys_model->sec_and_qa_must_sign_off
+RULE=de_runs_migration->rel_m_and_sre_must_be_notified
+RULE=tl_approves_adr->arch_must_review_if_cross_domain
+
+PERMISSION_BOUNDARY=role_may_not_grant_permissions_it_does_not_hold
+PERMISSION_BOUNDARY=role_may_not_access_systems_outside_its_defined_scope
+PERMISSION_BOUNDARY=ai_agent_executing_as_role->inherits_that_roles_permissions_and_forbidden_actions
+
+##################################################
+# AI AGENT EXECUTION CONTEXT
+##################################################
+
+AI_EXEC=ai_agent_must_declare_active_role_before_execution
+AI_EXEC=ai_agent_inherits_full_role_definition_including_forbidden_actions
+AI_EXEC=ai_agent_may_not_self_elevate_permissions
+AI_EXEC=ai_agent_must_apply_glossary.ki:r01_on_ambiguous_instructions
+AI_EXEC=ai_agent_must_apply_principles.ki:TRUTH_at_all_times
+AI_EXEC=ai_agent_must_surface_conflicts_not_silently_resolve_them
+
+RULE=ai_agent_receives_instruction_violating_forbidden_actions->refuse_and_explain
+RULE=ai_agent_receives_ambiguous_scope->apply_r01_ask_before_proceeding
+RULE=ai_agent_detects_security_sensitive_action->apply_r05_review
+RULE=ai_agent_detects_prod_change->apply_r06_rollback_plan
+RULE=ai_agent_output_unverifiable->label_unverified_per_principles.ki:TRUTH
+
+##################################################
+# CONFLICT RESOLUTION
+##################################################
+
+CONFLICT_01=kiro-core_overrides_kiro-roles_in_all_cases
+CONFLICT_02=ambiguity_in_role_boundary->escalate_per_glossary.ki:r01
+CONFLICT_03=two_roles_claim_same_decision_authority->tl_arbitrates_technical,pm_arbitrates_product
+CONFLICT_04=role_constraint_vs_business_pressure->apply_principles.ki:P01_through_P10_priority_order
+CONFLICT_05=security_constraint_vs_delivery_speed->security.ki:SEC_CORE=tradeoff_security_for_speed->reject_unless_explicit_risk_acceptance_signed
+CONFLICT_06=ai_agent_role_conflict->refuse_execution_surface_conflict_to_human
+
+##################################################
+# VERSIONING
+##################################################
+
+VERSION=1.0.0
+SEMVER=major.minor.patch
+MAJOR=breaking_change_to_role_boundary_or_permission_model
+MINOR=new_role_added_or_non_breaking_responsibility_change
+PATCH=clarification_or_documentation_fix
+INHERIT=kiro-core_version_pinned_at_1
+RULE=kiro-core_version_bumped->review_kiro-roles_for_compatibility
+RULE=role_definition_changed->changelog_entry_required
+RULE=permission_boundary_changed->sec_review_required

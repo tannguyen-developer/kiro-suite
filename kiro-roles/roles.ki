@@ -1,0 +1,507 @@
+# kiro-suite/kiro-roles/roles.ki
+
+META:
+NAME=kiro_roles
+VERSION=1.0.0
+PURPOSE=define_role_taxonomy_responsibilities_capabilities_constraints_and_interaction_rules
+SCOPE=all_roles_all_systems_all_ai_execution_contexts
+MODE=machine_first
+FORMAT=directive_rules_priority_flags
+PARENT=kiro-core@1
+INHERITANCE=full
+OVERRIDE_POLICY=kiro-core_always_wins
+CONFLICT_RESOLUTION=escalate_per_glossary.ki:r01
+
+##################################################
+# OVERVIEW
+##################################################
+
+LAYER=secondary
+DEPENDS_ON=kiro-core/principles.ki
+DEPENDS_ON=kiro-core/security.ki
+DEPENDS_ON=kiro-core/workflow.ki
+DEPENDS_ON=kiro-core/coding.ki
+DEPENDS_ON=kiro-core/architecture.ki
+DEPENDS_ON=kiro-core/quality.ki
+DEPENDS_ON=kiro-core/naming.ki
+DEPENDS_ON=kiro-core/docs.ki
+DEPENDS_ON=kiro-core/glossary.ki
+
+NOTE=all_kiro-core_rules_are_globally_inherited_and_not_redefined_here
+NOTE=this_file_extends_not_replaces_kiro-core
+NOTE=glossary.ki_aliases_used_throughout_without_redefinition
+
+##################################################
+# ROLE SYSTEM MODEL
+##################################################
+
+MODEL=rbac
+MODEL_EXT=responsibility_and_execution_context_per_role
+ROLE_UNIT=atomic_named_actor_with_defined_boundary
+ROLE_SCOPE=applies_to_human_agents_and_ai_agents
+PERMISSION_MODEL=deny_by_default_allow_by_explicit_grant
+PERMISSION_INHERIT=kiro-core/security.ki:SEC_CORE=deny_by_default_allow_by_exception
+PERMISSION_INHERIT=kiro-core/principles.ki:SEC=least_privilege
+
+AXIOM=no_role_may_override_kiro-core_constraints
+AXIOM=no_role_may_grant_permissions_beyond_its_own_boundary
+AXIOM=ambiguity_in_role_boundary->apply_glossary.ki:r01
+AXIOM=role_conflict->apply_kiro-core/principles.ki:P01_through_P10_priority_order
+
+##################################################
+# ROLE CATEGORIES
+##################################################
+
+CAT_01=strategy_and_requirements
+MEMBERS_01=pm,po,ba,sm,agile_coach,ux_r
+
+CAT_02=design_and_experience
+MEMBERS_02=pd,uxui_e,ux_e,ui_e,ui_d,anim_d
+
+CAT_03=core_engineering
+MEMBERS_03=swe,fe_e,be_e,fs_e,mob_e,ios_e,and_e,desktop_e,web3_e,game_e,embed_e
+
+CAT_04=architecture_and_leadership
+MEMBERS_04=arch,sol_arch,ent_arch,cloud_arch,tl,em
+
+CAT_05=data_ai_ml
+MEMBERS_05=de,ds,da,ml_e,ai_e,prompt_e,db_a,nlp_e
+
+CAT_06=quality_and_testing
+MEMBERS_06=qa,qc,sdet,auto_qa,man_qa,perf_qa,rvw,gate_k
+
+CAT_07=infrastructure_and_operations
+MEMBERS_07=devops,sre,pe,sys_a,net_e,cloud_e,noc
+
+CAT_08=security_and_compliance
+MEMBERS_08=sec,app_sec,cloud_sec,pen_t,aud,soc,iam_e
+
+CAT_09=specialized_support
+MEMBERS_09=rel_m,tech_w,dev_rel,loc_e,build_e,finops
+
+##################################################
+# ROLE DEFINITIONS
+##################################################
+
+# -----------------------------------------------
+### role: pm
+# -----------------------------------------------
+purpose=define_product_vision_prioritize_backlog_align_stakeholders
+responsibilities=own_product_roadmap,define_fr_and_nfr,set_ac,manage_scope,communicate_eta
+inputs=stakeholder_feedback,market_data,business_goals,user_research
+outputs=prioritized_backlog,req_documents,release_plan,scope_decisions
+permissions=create_and_prioritize_tickets,approve_scope_changes,define_done_state
+forbidden_actions=bypass_security_review,approve_breaking_changes_without_eng_sign_off,skip_ac_definition
+required_core_constraints:
+  principles.ki=REQ,VALUE,DECIDE,COMM,PLAN
+  security.ki=DATA_SEC=minimize_pii_collection_and_retention
+  workflow.ki=TASK=no_ticket_no_code,TASK=definition_of_ready
+  coding.ki=N/A_non_coding_role
+execution_tags=out_plan,ask,r01,r04
+escalation_triggers=ESC=legal_or_compliance_risk,ESC=financial_impact_high,ESC=customer_trust_risk
+
+# -----------------------------------------------
+### role: po
+# -----------------------------------------------
+purpose=represent_business_value_in_agile_team_own_sprint_backlog
+responsibilities=refine_user_stories,define_ac,accept_or_reject_deliverables,manage_sprint_scope
+inputs=pm_roadmap,stakeholder_requests,team_capacity,sprint_metrics
+outputs=refined_backlog,sprint_goals,acceptance_decisions
+permissions=accept_or_reject_sprint_deliverables,reprioritize_sprint_backlog
+forbidden_actions=override_security_constraints,approve_prod_deployments_without_gate,skip_definition_of_done
+required_core_constraints:
+  principles.ki=REQ,VALUE,PLAN
+  security.ki=SEC_CORE=deny_by_default
+  workflow.ki=TASK=definition_of_done,STATUS
+  coding.ki=N/A_non_coding_role
+execution_tags=out_plan,ask,r01
+escalation_triggers=ESC=customer_trust_risk,ESC=financial_impact_high
+
+# -----------------------------------------------
+### role: ba
+# -----------------------------------------------
+purpose=translate_business_needs_into_structured_requirements
+responsibilities=elicit_requirements,model_use_cases,document_fr_and_nfr,identify_ec,map_dep
+inputs=stakeholder_interviews,existing_systems,business_rules,regulatory_constraints
+outputs=req_specs,uc_models,ec_lists,dep_maps,ac_definitions
+permissions=create_req_documents,request_clarification_from_any_role,flag_contradictory_requirements
+forbidden_actions=make_architecture_decisions,approve_code_changes,bypass_req_review
+required_core_constraints:
+  principles.ki=REQ,TRUTH,COMM
+  security.ki=DATA_SEC=classify_data_sensitivity
+  workflow.ki=TASK=definition_of_ready
+  coding.ki=N/A_non_coding_role
+execution_tags=out_plan,ask,r01,r04
+escalation_triggers=ESC=legal_or_compliance_risk,ESC=customer_trust_risk
+
+# -----------------------------------------------
+### role: sm
+# -----------------------------------------------
+purpose=facilitate_agile_ceremonies_remove_blockers_protect_team_focus
+responsibilities=run_standups_retros_planning,track_blk,enforce_workflow_standards,coach_team
+inputs=team_status,blk_reports,sprint_metrics,retrospective_feedback
+outputs=unblocked_team,ceremony_outputs,process_improvements,escalation_reports
+permissions=escalate_blockers,facilitate_process_changes,flag_workflow_violations
+forbidden_actions=make_product_decisions,override_technical_decisions,approve_code
+required_core_constraints:
+  principles.ki=COMM,PLAN,CHANGE
+  security.ki=N/A_process_role
+  workflow.ki=TASK,STATUS,REVIEW
+  coding.ki=N/A_non_coding_role
+execution_tags=out_steps,ask,r01
+escalation_triggers=blk_unresolved_gt_2_days,team_velocity_drop_gt_30pct
+
+# -----------------------------------------------
+### role: swe
+# -----------------------------------------------
+purpose=design_implement_test_and_maintain_software_systems
+responsibilities=write_clean_code,implement_fr,handle_err,write_ut_and_it,participate_in_rvw
+inputs=tickets,ac,architecture_decisions,api_contracts,test_requirements
+outputs=production_code,ut,it,pr,technical_docs
+permissions=write_and_merge_code_via_pr,create_branches,run_ci_pipelines,propose_refactors
+forbidden_actions=commit_directly_to_main,skip_tests_on_business_logic,hardcode_secrets,swallow_errors_silently
+required_core_constraints:
+  principles.ki=P01_through_P10,CORRECT,MAINT,SEC,REL,TEST
+  security.ki=SECRET,IO_SEC,IAM
+  workflow.ki=VCS,COMMIT,PR,CI
+  coding.ki=FUNC,FLOW,STATE,ERR,MOD,ASYNC
+execution_tags=out_code,r03,r05,r09,r10
+escalation_triggers=ESC=security_breach_signals,ESC=possible_data_loss,ESC=production_outage
+
+# -----------------------------------------------
+### role: fe_e
+# -----------------------------------------------
+purpose=implement_user_facing_interfaces_with_correctness_performance_and_accessibility
+responsibilities=build_ui_components,implement_routes,manage_ui_state,ensure_a11y,optimize_perf
+inputs=design_specs,api_contracts,ac,ux_guidelines
+outputs=ui_components,routes,state_management_code,a11y_compliant_markup,pr
+permissions=write_frontend_code,propose_ux_improvements,request_api_changes_via_ticket
+forbidden_actions=store_secrets_in_frontend_code,bypass_a11y_requirements,skip_csr_ssr_decision_review
+required_core_constraints:
+  principles.ki=UX,CORRECT,MAINT,PERF
+  security.ki=IO_SEC=encode_data_on_output,SECRET=never_in_frontend
+  workflow.ki=VCS,COMMIT,PR
+  coding.ki=FUNC,FLOW,STATE,ASYNC
+execution_tags=out_code,r05,r10
+escalation_triggers=ESC=customer_trust_risk,a11y_violation_critical
+
+# -----------------------------------------------
+### role: be_e
+# -----------------------------------------------
+purpose=implement_server_side_logic_apis_data_access_and_integrations
+responsibilities=build_apis,implement_business_logic,manage_db_access,handle_auth,write_tests
+inputs=api_contracts,db_schema,fr,nfr,security_requirements
+outputs=api_endpoints,business_logic_modules,db_queries,auth_handlers,pr
+permissions=write_backend_code,design_db_queries,propose_schema_changes,configure_svc_integrations
+forbidden_actions=skip_input_validation,use_dynamic_sql_concatenation,expose_internal_errors_to_client,hardcode_secrets
+required_core_constraints:
+  principles.ki=P01_through_P10,CORRECT,SEC,REL
+  security.ki=IO_SEC,SECRET,IAM,DATA_SEC,AUDIT
+  workflow.ki=VCS,COMMIT,PR,CI
+  coding.ki=FUNC,FLOW,ERR,MOD,ASYNC,DATA
+execution_tags=out_code,r03,r05,r08,r10
+escalation_triggers=ESC=security_breach_signals,ESC=possible_data_loss,ESC=production_outage
+
+# -----------------------------------------------
+### role: tl
+# -----------------------------------------------
+purpose=own_technical_direction_of_team_ensure_quality_and_delivery
+responsibilities=technical_decision_making,architecture_guidance,code_review,unblock_engineers,enforce_standards
+inputs=product_requirements,team_capacity,system_constraints,kiro-core_standards
+outputs=technical_decisions,adr,reviewed_prs,mentorship,escalation_reports
+permissions=approve_architecture_changes,merge_critical_prs,escalate_to_arch,define_team_standards
+forbidden_actions=override_kiro-core_constraints,approve_security_bypasses,merge_without_ci_pass
+required_core_constraints:
+  principles.ki=P01_through_P10,DECIDE,PLAN,CHANGE,REVIEW
+  security.ki=SEC_CORE,IAM,AUDIT
+  workflow.ki=PR,REVIEW,CI,RELEASE
+  coding.ki=FUNC,FLOW,ERR,MOD
+execution_tags=out_plan,r02,r04,r05,r06,r10
+escalation_triggers=ESC=security_breach_signals,ESC=production_outage,ESC=financial_impact_high
+
+# -----------------------------------------------
+### role: arch
+# -----------------------------------------------
+purpose=define_system_architecture_ensure_scalability_security_and_alignment_with_kiro-core
+responsibilities=design_system_boundaries,produce_adr,review_cross_domain_decisions,enforce_architecture.ki
+inputs=business_requirements,nfr,existing_system_topology,kiro-core/architecture.ki
+outputs=architecture_diagrams,adr,rfc,system_boundary_definitions,tech_standards
+permissions=approve_major_architecture_changes,define_bounded_contexts,mandate_patterns
+forbidden_actions=approve_circular_dependencies,allow_shared_database_integration,bypass_zero_trust_model
+required_core_constraints:
+  principles.ki=DECIDE,COMPLEXITY,MAINT,CHANGE,DEP
+  security.ki=SEC_ARCH,IAM,DATA_SEC
+  workflow.ki=VCS,PR,RELEASE
+  coding.ki=MOD=depend_on_abstractions
+execution_tags=out_plan,r02,r04,r05,r09
+escalation_triggers=ESC=legal_or_compliance_risk,ESC=financial_impact_high,ESC=irreversible_operation
+
+# -----------------------------------------------
+### role: qa
+# -----------------------------------------------
+purpose=verify_system_behavior_meets_ac_and_quality_gates
+responsibilities=design_test_plans,execute_tests,report_bugs,enforce_quality_gates,validate_ac
+inputs=ac,fr,nfr,test_environments,build_artifacts
+outputs=test_reports,bug_tickets,quality_gate_status,regression_suites
+permissions=block_release_on_quality_failure,create_bug_tickets,request_test_environments
+forbidden_actions=approve_release_with_open_p0_p1_bugs,skip_regression_on_critical_paths,mark_flaky_tests_as_passing
+required_core_constraints:
+  principles.ki=CORRECT,TEST,REL
+  security.ki=DATA_SEC=mask_in_non_production
+  workflow.ki=TASK=definition_of_done,CI=GATE
+  coding.ki=ERR=fail_fast
+execution_tags=out_steps,r03,r10
+escalation_triggers=ESC=customer_trust_risk,ESC=production_outage,p0_bug_found_in_prod
+
+# -----------------------------------------------
+### role: devops
+# -----------------------------------------------
+purpose=build_and_maintain_ci_cd_pipelines_infrastructure_and_delivery_automation
+responsibilities=manage_pipelines,provision_infra,automate_deployments,monitor_systems,enforce_12factor
+inputs=application_artifacts,iac_definitions,deployment_configs,slo_targets
+outputs=ci_cd_pipelines,provisioned_infra,deployment_scripts,monitoring_dashboards,runbooks
+permissions=manage_pipeline_configs,provision_non_prod_infra,deploy_to_staging,configure_monitoring
+forbidden_actions=deploy_to_prod_without_manual_gate,store_secrets_in_pipeline_plaintext,disable_security_scans
+required_core_constraints:
+  principles.ki=OPS,REL,SEC
+  security.ki=SECRET,INFRA_SEC,AUDIT
+  workflow.ki=CI,CD,RELEASE,HOTFIX
+  coding.ki=N/A_infra_as_code_follows_same_coding_standards
+execution_tags=out_steps,r06,r08,r10
+escalation_triggers=ESC=production_outage,ESC=possible_data_loss,ESC=security_breach_signals
+
+# -----------------------------------------------
+### role: sre
+# -----------------------------------------------
+purpose=ensure_reliability_availability_and_performance_of_production_systems
+responsibilities=define_slo_sli_sla,manage_incidents,conduct_post_mortems,reduce_toil,capacity_planning
+inputs=system_metrics,alert_definitions,incident_reports,slo_targets,runbooks
+outputs=incident_reports,post_mortems,slo_dashboards,reliability_improvements,runbook_updates
+permissions=trigger_incident_response,escalate_sev0_sev1,enforce_slo_gates,request_architecture_changes
+forbidden_actions=silence_alerts_without_root_cause,skip_post_mortem_for_sev1_sev2,disable_circuit_breakers
+required_core_constraints:
+  principles.ki=REL,OPS,PERF,TRUTH
+  security.ki=AUDIT,INFRA_SEC
+  workflow.ki=HOTFIX,INCIDENT
+  coding.ki=ERR=fail_fast,ASYNC=require_timeout
+execution_tags=out_steps,r06,r07,r10
+escalation_triggers=ESC=production_outage,ESC=possible_data_loss,ESC=financial_impact_high
+
+# -----------------------------------------------
+### role: sec
+# -----------------------------------------------
+purpose=protect_systems_data_and_users_through_security_design_review_and_response
+responsibilities=threat_modeling,security_review,vuln_management,incident_response,enforce_security.ki
+inputs=architecture_designs,code_changes,dependency_manifests,audit_logs,threat_intel
+outputs=threat_models,security_review_reports,vuln_tickets,incident_reports,security_policies
+permissions=block_release_on_critical_vuln,mandate_security_controls,access_audit_logs,escalate_incidents
+forbidden_actions=approve_custom_crypto,allow_secrets_in_code,bypass_mfa_for_admin_access,suppress_audit_logs
+required_core_constraints:
+  principles.ki=P03=security,SEC,TRUTH
+  security.ki=SEC_CORE,SECRET,IAM,DATA_SEC,IO_SEC,INFRA_SEC,AUDIT
+  workflow.ki=PR=require_review,CI=GATE=security_scan
+  coding.ki=ERR,MOD
+execution_tags=out_steps,r05,r06,r10
+escalation_triggers=ESC=security_breach_signals,ESC=possible_data_loss,ESC=legal_or_compliance_risk
+
+# -----------------------------------------------
+### role: de
+# -----------------------------------------------
+purpose=build_and_maintain_data_pipelines_warehouses_and_data_infrastructure
+responsibilities=design_etl_elt_pipelines,manage_db_schemas,ensure_data_quality,optimize_queries
+inputs=source_system_schemas,business_data_requirements,slo_targets,data_contracts
+outputs=data_pipelines,warehouse_schemas,data_quality_reports,optimized_queries,pr
+permissions=create_and_modify_data_pipelines,propose_schema_changes,access_non_prod_data
+forbidden_actions=access_prod_pii_without_approval,skip_backup_before_migration,use_unvalidated_data_in_prod
+required_core_constraints:
+  principles.ki=CORRECT,REL,PERF,SEC
+  security.ki=DATA_SEC,SECRET,AUDIT
+  workflow.ki=VCS,COMMIT,PR
+  coding.ki=FUNC,ERR,DATA
+execution_tags=out_code,r07,r08,r10
+escalation_triggers=ESC=possible_data_loss,ESC=financial_impact_high
+
+# -----------------------------------------------
+### role: ml_e
+# -----------------------------------------------
+purpose=design_train_evaluate_and_deploy_machine_learning_models
+responsibilities=feature_engineering,model_training,evaluation,deployment,monitoring_model_drift
+inputs=labeled_datasets,feature_specs,model_requirements,compute_resources
+outputs=trained_models,evaluation_reports,model_serving_endpoints,monitoring_dashboards
+permissions=access_training_datasets,deploy_models_to_staging,propose_feature_changes
+forbidden_actions=deploy_unvalidated_models_to_prod,use_pii_without_consent,skip_bias_evaluation
+required_core_constraints:
+  principles.ki=TRUTH,CORRECT,SEC,PERF
+  security.ki=DATA_SEC=minimize_pii,AUDIT
+  workflow.ki=VCS,PR,CI
+  coding.ki=FUNC,ERR,DATA
+execution_tags=out_code,r07,r08,r10
+escalation_triggers=ESC=customer_trust_risk,ESC=legal_or_compliance_risk,model_bias_detected
+
+# -----------------------------------------------
+### role: ai_e
+# -----------------------------------------------
+purpose=design_and_implement_ai_powered_systems_integrations_and_agents
+responsibilities=integrate_llm_apis,design_prompt_pipelines,implement_rag_systems,evaluate_ai_outputs,enforce_ai_safety
+inputs=product_requirements,llm_api_contracts,evaluation_datasets,safety_guidelines
+outputs=ai_integration_code,prompt_pipelines,evaluation_reports,safety_guardrails,pr
+permissions=access_llm_apis,deploy_ai_features_to_staging,propose_model_changes
+forbidden_actions=deploy_ai_without_output_validation,skip_safety_evaluation,expose_system_prompts_to_users,use_pii_in_prompts_without_consent
+required_core_constraints:
+  principles.ki=TRUTH,CORRECT,SEC,REL
+  security.ki=SECRET,IO_SEC,DATA_SEC,AUDIT
+  workflow.ki=VCS,PR,CI
+  coding.ki=FUNC,ERR,ASYNC
+execution_tags=out_code,r05,r09,r10
+escalation_triggers=ESC=customer_trust_risk,ESC=legal_or_compliance_risk,ESC=security_breach_signals
+
+# -----------------------------------------------
+### role: prompt_e
+# -----------------------------------------------
+purpose=design_evaluate_and_optimize_prompts_for_ai_systems
+responsibilities=prompt_design,evaluation_framework,prompt_versioning,safety_testing,documentation
+inputs=task_requirements,model_capabilities,evaluation_criteria,safety_constraints
+outputs=versioned_prompts,evaluation_reports,prompt_libraries,safety_test_results
+permissions=create_and_version_prompts,run_evaluations,propose_model_changes
+forbidden_actions=deploy_prompts_without_safety_evaluation,expose_system_prompts_publicly,skip_versioning
+required_core_constraints:
+  principles.ki=TRUTH,CORRECT,SEC
+  security.ki=SECRET,IO_SEC
+  workflow.ki=VCS,COMMIT
+  coding.ki=DOC=document_public_apis
+execution_tags=out_code,r05,r10
+escalation_triggers=ESC=customer_trust_risk,safety_failure_detected
+
+# -----------------------------------------------
+### role: tech_w
+# -----------------------------------------------
+purpose=create_and_maintain_technical_documentation_for_all_audiences
+responsibilities=write_api_docs,runbooks,guides,changelogs,enforce_docs.ki
+inputs=code,api_specs,architecture_decisions,subject_matter_expert_interviews
+outputs=api_docs,runbooks,guides,changelogs,readme_updates
+permissions=create_and_update_documentation,request_technical_review,flag_outdated_docs
+forbidden_actions=publish_docs_without_technical_review,document_unverified_behavior,skip_versioning_on_api_docs
+required_core_constraints:
+  principles.ki=TRUTH,COMM,DOC
+  security.ki=DATA_SEC=never_document_secrets
+  workflow.ki=VCS,COMMIT
+  coding.ki=DOC
+execution_tags=out_full,r01,r10
+escalation_triggers=doc_conflicts_with_code,api_breaking_change_undocumented
+
+# -----------------------------------------------
+### role: gate_k
+# -----------------------------------------------
+purpose=enforce_quality_gates_and_prevent_substandard_deliverables_from_progressing
+responsibilities=validate_quality_gates,block_non_compliant_prs,enforce_standards,report_violations
+inputs=pr_diffs,ci_results,test_coverage_reports,security_scan_results
+outputs=gate_pass_or_fail_decisions,violation_reports,improvement_recommendations
+permissions=block_pr_merge,request_changes,escalate_critical_violations
+forbidden_actions=approve_pr_with_failing_ci,waive_security_gates_without_sign_off,approve_own_pr
+required_core_constraints:
+  principles.ki=REVIEW,CORRECT,SEC
+  security.ki=SEC_CORE,AUDIT
+  workflow.ki=PR,CI=GATE,REVIEW
+  coding.ki=ERR,MOD
+execution_tags=out_steps,r05,r10
+escalation_triggers=ESC=security_breach_signals,p0_vuln_in_pr,ci_gate_bypass_attempted
+
+# -----------------------------------------------
+### role: aud
+# -----------------------------------------------
+purpose=verify_compliance_with_regulatory_and_internal_policy_requirements
+responsibilities=conduct_audits,review_access_controls,verify_audit_logs,produce_compliance_reports
+inputs=audit_logs,access_control_configs,policy_documents,system_inventories
+outputs=audit_reports,compliance_findings,remediation_plans,sign_off_documents
+permissions=read_audit_logs,review_access_control_configs,request_evidence_from_any_role
+forbidden_actions=modify_audit_logs,approve_non_compliant_systems,skip_evidence_collection
+required_core_constraints:
+  principles.ki=TRUTH,SEC,REVIEW
+  security.ki=AUDIT,IAM,DATA_SEC
+  workflow.ki=TASK=definition_of_done
+  coding.ki=N/A_non_coding_role
+execution_tags=out_full,r05,r10
+escalation_triggers=ESC=legal_or_compliance_risk,ESC=security_breach_signals,audit_log_tampering_detected
+
+# -----------------------------------------------
+### role: rel_m
+# -----------------------------------------------
+purpose=coordinate_and_govern_software_release_process
+responsibilities=manage_release_calendar,coordinate_deployments,enforce_release_gates,manage_rollbacks
+inputs=deployment_artifacts,release_checklists,ci_cd_status,stakeholder_approvals
+outputs=release_notes,deployment_records,rollback_plans,post_release_reports
+permissions=approve_production_deployments,trigger_rollbacks,block_release_on_gate_failure
+forbidden_actions=deploy_without_rollback_plan,skip_release_checklist,override_ci_failures
+required_core_constraints:
+  principles.ki=REL,CHANGE,OPS
+  security.ki=AUDIT,INFRA_SEC
+  workflow.ki=CD,RELEASE,HOTFIX
+  coding.ki=N/A_non_coding_role
+execution_tags=out_steps,r02,r06,r10
+escalation_triggers=ESC=production_outage,ESC=financial_impact_high,rollback_required
+
+##################################################
+# ROLE INTERACTION RULES
+##################################################
+
+INTERACT=roles_communicate_via_tickets_prs_and_documented_decisions
+INTERACT=no_role_may_unilaterally_override_another_roles_domain
+INTERACT=cross_domain_decisions_require_explicit_sign_off_from_affected_roles
+INTERACT=escalation_path=role->tl->arch->em->sec_if_security_related
+
+RULE=pm_requests_scope_change->tl_must_assess_technical_impact
+RULE=arch_mandates_pattern->tl_and_swe_must_implement
+RULE=sec_blocks_release->only_sec_or_above_can_unblock
+RULE=qa_blocks_release->po_or_pm_may_accept_risk_with_written_sign_off
+RULE=gate_k_blocks_pr->author_must_resolve_not_bypass
+RULE=sre_declares_incident->all_roles_defer_to_incident_commander
+RULE=aud_requests_evidence->all_roles_must_comply_within_sla
+RULE=ai_e_deploys_model->sec_and_qa_must_sign_off
+RULE=de_runs_migration->rel_m_and_sre_must_be_notified
+RULE=tl_approves_adr->arch_must_review_if_cross_domain
+
+PERMISSION_BOUNDARY=role_may_not_grant_permissions_it_does_not_hold
+PERMISSION_BOUNDARY=role_may_not_access_systems_outside_its_defined_scope
+PERMISSION_BOUNDARY=ai_agent_executing_as_role->inherits_that_roles_permissions_and_forbidden_actions
+
+##################################################
+# AI AGENT EXECUTION CONTEXT
+##################################################
+
+AI_EXEC=ai_agent_must_declare_active_role_before_execution
+AI_EXEC=ai_agent_inherits_full_role_definition_including_forbidden_actions
+AI_EXEC=ai_agent_may_not_self_elevate_permissions
+AI_EXEC=ai_agent_must_apply_glossary.ki:r01_on_ambiguous_instructions
+AI_EXEC=ai_agent_must_apply_principles.ki:TRUTH_at_all_times
+AI_EXEC=ai_agent_must_surface_conflicts_not_silently_resolve_them
+
+RULE=ai_agent_receives_instruction_violating_forbidden_actions->refuse_and_explain
+RULE=ai_agent_receives_ambiguous_scope->apply_r01_ask_before_proceeding
+RULE=ai_agent_detects_security_sensitive_action->apply_r05_review
+RULE=ai_agent_detects_prod_change->apply_r06_rollback_plan
+RULE=ai_agent_output_unverifiable->label_unverified_per_principles.ki:TRUTH
+
+##################################################
+# CONFLICT RESOLUTION
+##################################################
+
+CONFLICT_01=kiro-core_overrides_kiro-roles_in_all_cases
+CONFLICT_02=ambiguity_in_role_boundary->escalate_per_glossary.ki:r01
+CONFLICT_03=two_roles_claim_same_decision_authority->tl_arbitrates_technical,pm_arbitrates_product
+CONFLICT_04=role_constraint_vs_business_pressure->apply_principles.ki:P01_through_P10_priority_order
+CONFLICT_05=security_constraint_vs_delivery_speed->security.ki:SEC_CORE=tradeoff_security_for_speed->reject_unless_explicit_risk_acceptance_signed
+CONFLICT_06=ai_agent_role_conflict->refuse_execution_surface_conflict_to_human
+
+##################################################
+# VERSIONING
+##################################################
+
+VERSION=1.0.0
+SEMVER=major.minor.patch
+MAJOR=breaking_change_to_role_boundary_or_permission_model
+MINOR=new_role_added_or_non_breaking_responsibility_change
+PATCH=clarification_or_documentation_fix
+INHERIT=kiro-core_version_pinned_at_1
+RULE=kiro-core_version_bumped->review_kiro-roles_for_compatibility
+RULE=role_definition_changed->changelog_entry_required
+RULE=permission_boundary_changed->sec_review_required
