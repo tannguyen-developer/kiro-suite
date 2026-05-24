@@ -1,0 +1,71 @@
+# kiro-suite/kiro-ext-pkgs/domains/ecommerce/reliability.ki
+
+META:
+NAME=ecommerce_reliability
+VERSION=1.0.0
+PURPOSE=saga_patterns_idempotency_retry_policies_and_circuit_breaker_constraints
+SCOPE=all_ecommerce_systems
+MODE=machine_first
+FORMAT=directive_rules_priority_flags
+PARENT=kiro-core@1
+LAYER=tertiary
+DEPENDS_ON=kiro-core/architecture.ki
+DEPENDS_ON=kiro-ext-pkgs/domains/ecommerce/entities.ki
+DEPENDS_ON=kiro-ext-pkgs/domains/ecommerce/states.ki
+
+##################################################
+# SAGA PATTERN RULES
+##################################################
+
+REUSE=kiro-core/architecture.ki:RULE=distributed_transaction_needed->use_saga_pattern
+RULE=order_mutation_without_saga_pattern->block
+RULE=payment_mutation_without_saga_pattern->block
+
+NOTE=saga_pattern_is_required_for_all_distributed_transactions_spanning_order_service_payment_service_and_fulfillment_service_each_saga_step_must_declare_a_compensating_transaction_to_enable_rollback_on_downstream_failure
+
+##################################################
+# COMPENSATING TRANSACTION PAIRS
+##################################################
+
+SAGA_STEP=inventory_decrement  COMPENSATE=inventory_restore
+SAGA_STEP=payment_capture      COMPENSATE=payment_void
+
+NOTE=compensating_transactions_reverse_the_effect_of_a_completed_saga_step_when_a_downstream_step_fails_the_saga_coordinator_must_invoke_compensating_transactions_in_reverse_order_for_all_previously_completed_steps
+
+##################################################
+# RETRY POLICY RULES
+##################################################
+
+RULE=payment_retry_without_exponential_backoff_jitter->block
+RULE=payment_retry_max_count_gt_3->block
+BACKOFF=exponential_with_jitter
+MAX_RETRIES=3
+
+NOTE=exponential_backoff_with_jitter_prevents_thundering_herd_by_spreading_retry_attempts_across_time_a_maximum_of_3_retries_limits_total_latency_and_prevents_indefinite_retry_storms_against_a_degraded_payment_gateway
+
+##################################################
+# WEBHOOK DELIVERY RULE
+##################################################
+
+RULE=order_event_webhook_without_idempotency_dedup->block
+WEBHOOK_DELIVERY=at_least_once
+IDEMPOTENCY_DEDUP=required_on_consumer_side
+
+NOTE=at_least_once_delivery_guarantees_no_event_is_lost_but_may_produce_duplicates_consumers_must_implement_idempotency_key_deduplication_to_ensure_duplicate_webhook_deliveries_do_not_cause_duplicate_side_effects
+
+##################################################
+# PAYMENT GATEWAY TIMEOUT RULE
+##################################################
+
+RULE=payment_gateway_timeout->require_pending_verification_state_not_failure_assumption
+
+NOTE=a_payment_gateway_timeout_does_not_confirm_failure_the_system_must_enter_pending_verification_state_and_poll_the_gateway_for_resolution_assuming_failure_on_timeout_risks_voiding_a_payment_that_actually_succeeded
+
+##################################################
+# CART-TO-ORDER ATOMICITY (cross-reference from rules.ki)
+##################################################
+
+RULE=order_created_without_cart_converted->block
+REUSE=kiro-ext-pkgs/domains/ecommerce/rules.ki:RULE=order_created_without_cart_converted->block
+
+NOTE=this_is_a_cross_reference_to_rules.ki_for_completeness_in_the_reliability_context_cart_to_order_conversion_must_be_atomic_creating_an_order_without_simultaneously_transitioning_the_cart_to_converted_state_violates_distributed_consistency_guarantees

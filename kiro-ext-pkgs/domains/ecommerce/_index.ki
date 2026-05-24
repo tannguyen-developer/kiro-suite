@@ -1,0 +1,203 @@
+# kiro-suite/kiro-ext-pkgs/domains/ecommerce/_index.ki
+
+META:
+NAME=ecommerce_domain_pack_index
+VERSION=1.0.0
+PURPOSE=manifest_dependency_declarations_load_order_and_priority_registry_for_ecommerce_domain_pack
+SCOPE=all_ecommerce_systems_all_ai_agents_operating_in_ecommerce_contexts
+MODE=machine_first
+FORMAT=directive_rules_priority_flags
+PARENT=kiro-core@1
+LAYER=tertiary
+INHERITANCE=full
+OVERRIDE_POLICY=kiro-core_always_wins
+CONFLICT_RESOLUTION=escalate_per_glossary.ki:r01
+
+##################################################
+# LAYER DECLARATION
+##################################################
+
+LAYER=tertiary
+DEPENDS_ON=kiro-core/principles.ki
+DEPENDS_ON=kiro-core/security.ki
+DEPENDS_ON=kiro-core/architecture.ki
+DEPENDS_ON=kiro-core/glossary.ki
+DEPENDS_ON=kiro-core/coding.ki
+DEPENDS_ON=kiro-core/workflow.ki
+DEPENDS_ON=kiro-core/quality.ki
+DEPENDS_ON=kiro-core/naming.ki
+DEPENDS_ON=kiro-core/docs.ki
+DEPENDS_ON=kiro-roles@1
+DEPENDS_ON=kiro-core@1
+
+NOTE=all_kiro-core_rules_are_globally_inherited_and_not_redefined_here
+NOTE=this_file_extends_not_replaces_kiro-core_and_kiro-roles
+NOTE=glossary.ki_aliases_used_throughout_without_redefinition
+NOTE=domain_constraints_may_only_add_never_relax_kiro-core_rules
+
+##################################################
+# SCOPE DECLARATION
+##################################################
+
+SCOPE_IN=storefront
+SCOPE_IN=cart_service
+SCOPE_IN=order_service
+SCOPE_IN=payment_service
+SCOPE_IN=fulfillment_service
+SCOPE_IN=catalog_service
+
+SCOPE_OUT=ERP_integration
+SCOPE_OUT=accounting_ledger
+SCOPE_OUT=HR_systems
+SCOPE_OUT=logistics_carrier_internals
+SCOPE_OUT=ad_tech_platforms
+
+##################################################
+# LOAD ORDER AND DEPENDENCY ENFORCEMENT
+##################################################
+
+LOAD_ORDER=1:kiro-core
+LOAD_ORDER=2:kiro-roles
+LOAD_ORDER=3:kiro-ext-pkgs/domains/ecommerce/_index.ki
+LOAD_ORDER=4:kiro-ext-pkgs/domains/ecommerce/glossary.ki
+LOAD_ORDER=5:kiro-ext-pkgs/domains/ecommerce/entities.ki
+LOAD_ORDER=6:kiro-ext-pkgs/domains/ecommerce/states.ki
+LOAD_ORDER=7:kiro-ext-pkgs/domains/ecommerce/rules.ki
+LOAD_ORDER=8:kiro-ext-pkgs/domains/ecommerce/security.ki
+LOAD_ORDER=9:kiro-ext-pkgs/domains/ecommerce/reliability.ki
+LOAD_ORDER=10:kiro-ext-pkgs/domains/ecommerce/workflows.ki
+LOAD_ORDER=11:kiro-ext-pkgs/domains/ecommerce/roles.ki
+LOAD_ORDER=12:kiro-ext-pkgs/domains/ecommerce/edge-cases.ki
+
+REQUIRES=kiro-core_loaded_before_this_pack
+REQUIRES=kiro-roles_loaded_before_this_pack
+REQUIRES=kiro-core_loaded_before_kiro-roles
+
+RULE=kiro-core_not_loaded_when_pack_activated->emit_MISSING_DEP_and_halt
+RULE=kiro-roles_not_loaded_when_pack_activated->emit_MISSING_DEP_and_halt
+RULE=pack_file_loaded_before_its_declared_LOAD_ORDER_position->emit_MISSING_DEP_and_halt
+
+##################################################
+# CONFLICT DETECTION
+##################################################
+
+RULE=domain_directive_key_matches_kiro-core_directive_key->emit_CONFLICT_SIGNAL_and_halt
+RULE=domain_directive_key_matches_kiro-roles_directive_key->emit_CONFLICT_SIGNAL_and_halt
+
+CONFLICT_SIGNAL_FORMAT=CONFLICT_SIGNAL=<domain_file>:<key> conflicts with <parent_pack>/<file>:<key>
+MISSING_DEP_FORMAT=MISSING_DEP=<dependency_name>_required_before_pack_activation
+
+NOTE=conflict_detection_is_total_no_silent_resolution
+NOTE=operator_must_resolve_conflict_explicitly_before_pack_is_considered_active
+NOTE=mirrors_kiro-roles/_index.ki:CONFLICT_01
+
+##################################################
+# PRIORITY TIERS
+##################################################
+
+# P0 — MVP: must be implemented and reviewed before any other tier
+PRIORITY=P0  FILE=_index.ki
+PRIORITY=P0  FILE=glossary.ki
+PRIORITY=P0  FILE=entities.ki
+PRIORITY=P0  FILE=states.ki
+PRIORITY=P0  FILE=rules.ki
+PRIORITY=P0  FILE=security.ki
+
+# P1 — implement after all P0 files are complete and reviewed
+PRIORITY=P1  FILE=reliability.ki
+PRIORITY=P1  FILE=workflows.ki
+PRIORITY=P1  FILE=roles.ki
+
+# P2 — implement after all P1 files are complete
+PRIORITY=P2  FILE=edge-cases.ki
+PRIORITY=P2  FILE=README.md
+
+RULE=P1_file_merged_before_all_P0_files_reviewed->block
+RULE=P2_file_merged_before_all_P1_files_reviewed->block
+RULE=P0_file_references_P1_or_P2_file_not_yet_implemented->declare_TBD_with_ticket_reference
+
+##################################################
+# FILE REGISTRY
+##################################################
+
+# A file MUST be registered here before it is considered active.
+# Unregistered files are ignored by the pack loader.
+
+FILE_REGISTRY=_index.ki          PRIORITY=P0  STATUS=active
+FILE_REGISTRY=glossary.ki        PRIORITY=P0  STATUS=active
+FILE_REGISTRY=entities.ki        PRIORITY=P0  STATUS=active
+FILE_REGISTRY=states.ki          PRIORITY=P0  STATUS=active
+FILE_REGISTRY=rules.ki           PRIORITY=P0  STATUS=active
+FILE_REGISTRY=security.ki        PRIORITY=P0  STATUS=active
+FILE_REGISTRY=reliability.ki     PRIORITY=P1  STATUS=active
+FILE_REGISTRY=workflows.ki       PRIORITY=P1  STATUS=active
+FILE_REGISTRY=roles.ki           PRIORITY=P1  STATUS=active
+FILE_REGISTRY=edge-cases.ki      PRIORITY=P2  STATUS=active
+
+RULE=ki_file_not_in_FILE_REGISTRY->not_considered_active_ignore_on_load
+
+##################################################
+# VERSIONING
+##################################################
+
+SEMVER=major.minor.patch
+VERSION=1.0.0
+
+MAJOR=breaking_change_to_entity_definition_or_state_machine
+MINOR=new_entity_or_rule_added_non_breaking
+PATCH=clarification_or_documentation_fix
+
+RULE=state_machine_transition_added_or_removed->increment_major_require_arch_signoff
+RULE=new_entity_added->increment_minor_require_tl_review
+RULE=security_ki_changed->require_sec_signoff_before_merge
+RULE=permission_boundary_changed->require_sec_review
+RULE=version_bumped->changelog_entry_required
+RULE=kiro-core_version_bumped->review_ecommerce_pack_for_compatibility
+
+##################################################
+# EXTENDS AND REUSE SUMMARY
+##################################################
+
+# kiro-core rules extended (domain adds constraints on top)
+EXTENDS=kiro-core/security.ki:IAM                                                # dual authz on payment and refund mutations
+EXTENDS=kiro-core/security.ki:DATA_SEC                                           # PII field classification to restricted
+EXTENDS=kiro-core/security.ki:IAM=require_mfa_for_administrative_or_sensitive_access  # admin order/payment endpoints
+
+# kiro-core rules reused without modification
+REUSE=kiro-core/security.ki:AUDIT=log_all_critical_state_changes                 # financial mutation audit log
+REUSE=kiro-core/architecture.ki:RULE=distributed_transaction_needed->use_saga_pattern  # saga pattern for order/payment
+REUSE=kiro-core/architecture.ki:RULE=cross_domain_data_join                      # block shared DB joins across services
+REUSE=kiro-core/principles.ki:REL=idempotency_where_needed                       # idempotency keys on mutations
+REUSE=kiro-core/architecture.ki:RULE=retry_logic_implemented                     # exponential backoff with jitter
+
+NOTE=no_kiro-core_rule_is_redeclared_or_redefined_in_this_pack
+NOTE=EXTENDS_adds_domain_constraints_on_top_of_existing_kiro-core_rule
+NOTE=REUSE_references_kiro-core_rule_without_modification
+
+##################################################
+# SUB-DOMAIN EXTENSION PATTERN
+##################################################
+
+SUBDOMAIN_PATH=kiro-ext-pkgs/domains/ecommerce/<sub-domain>/
+SUBDOMAIN_PARENT=kiro-ext-pkgs/domains/ecommerce@<version>
+SUBDOMAIN_OVERRIDE_POLICY=parent_always_wins
+SUBDOMAIN_LAYER=quaternary
+
+NOTE=sub-domain_packs_inherit_from_this_pack_as_their_parent
+NOTE=sub-domain_packs_declare_PARENT=kiro-ext-pkgs/domains/ecommerce@<version>
+NOTE=sub-domain_conflict_with_this_pack_applies_OVERRIDE_POLICY=parent_always_wins
+NOTE=mirrors_kiro-core_override_model_one_level_down
+NOTE=example_sub-domains=ecommerce/marketplace,ecommerce/subscription,ecommerce/b2b
+
+RULE=subdomain_pack_conflicts_with_parent_pack_rule->apply_parent_always_wins_and_surface_conflict
+RULE=subdomain_pack_relaxes_parent_pack_rule->block_not_permitted
+
+##################################################
+# AXIOMS
+##################################################
+
+AXIOM=no_domain_rule_may_override_kiro-core_constraints
+AXIOM=no_domain_rule_may_relax_kiro-roles_permission_boundaries
+AXIOM=ambiguity_in_domain_rule->apply_glossary.ki:r01
+AXIOM=domain_rule_conflict_with_kiro-core->apply_kiro-core/principles.ki:P01_through_P10_priority_order
+AXIOM=security_constraint_vs_delivery_speed->security_wins_per_kiro-core/security.ki

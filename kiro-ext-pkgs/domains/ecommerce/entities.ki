@@ -1,0 +1,240 @@
+# kiro-suite/kiro-ext-pkgs/domains/ecommerce/entities.ki
+
+META:
+NAME=ecommerce_entities
+VERSION=1.0.0
+PURPOSE=canonical_entity_model_ownership_boundaries_and_cross_service_reference_rules
+SCOPE=all_ecommerce_systems
+MODE=machine_first
+FORMAT=directive_rules_priority_flags
+PARENT=kiro-core@1
+LAYER=tertiary
+DEPENDS_ON=kiro-core/architecture.ki
+DEPENDS_ON=kiro-ext-pkgs/domains/ecommerce/glossary.ki
+
+##################################################
+# GLOBAL ENTITY POLICIES
+##################################################
+
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+
+RULE=entity_missing_required_audit_fields->block
+RULE=cross_service_embedded_object_detected->block_require_id_reference
+RULE=shared_database_join_across_service_boundaries->block_require_api_composition_or_cqrs
+REUSE=kiro-core/architecture.ki:RULE=cross_domain_data_join
+
+NOTE=all_entities_inherit_REQUIRED_FIELDS_and_CROSS_REF_POLICY_declared_above
+NOTE=cross_service_references_must_use_id_field_pattern_never_embedded_objects
+NOTE=id_field_type_is_uuid_unless_otherwise_declared_by_consuming_service
+
+##################################################
+# CATALOG SERVICE ENTITIES
+##################################################
+
+ENTITY=Product
+OWNER=catalog_service
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+FIELD=name                TYPE=string
+FIELD=description         TYPE=string
+FIELD=price_minor_unit    TYPE=integer
+FIELD=currency_code       TYPE=string
+FIELD=sku                 TYPE=string
+FIELD=status              TYPE=string
+
+ENTITY=ProductVariant
+OWNER=catalog_service
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+FIELD=product_id          TYPE=uuid    REF=catalog_service:Product
+FIELD=sku                 TYPE=string
+FIELD=attributes          TYPE=jsonb
+FIELD=price_minor_unit    TYPE=integer
+FIELD=currency_code       TYPE=string
+
+ENTITY=Category
+OWNER=catalog_service
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+FIELD=name                    TYPE=string
+FIELD=parent_category_id      TYPE=uuid    REF=catalog_service:Category
+FIELD=slug                    TYPE=string
+
+ENTITY=Inventory
+OWNER=catalog_service
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+FIELD=product_variant_id      TYPE=uuid    REF=catalog_service:ProductVariant
+FIELD=quantity_on_hand        TYPE=integer
+FIELD=quantity_reserved       TYPE=integer
+FIELD=state                   TYPE=string
+
+##################################################
+# CART SERVICE ENTITIES
+##################################################
+
+ENTITY=Cart
+OWNER=cart_service
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+FIELD=customer_id             TYPE=uuid    REF=storefront:Customer
+FIELD=state                   TYPE=string
+FIELD=expires_at              TYPE=timestamp
+
+ENTITY=CartItem
+OWNER=cart_service
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+FIELD=cart_id                 TYPE=uuid    REF=cart_service:Cart
+FIELD=product_variant_id      TYPE=uuid    REF=catalog_service:ProductVariant
+FIELD=quantity                TYPE=integer
+FIELD=price_minor_unit        TYPE=integer
+FIELD=currency_code           TYPE=string
+
+##################################################
+# ORDER SERVICE ENTITIES
+##################################################
+
+ENTITY=Order
+OWNER=order_service
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+IMMUTABLE_AFTER_TERMINAL=true
+TERMINAL_STATES=delivered,cancelled,refunded
+FIELD=customer_id             TYPE=uuid    REF=storefront:Customer
+FIELD=cart_id                 TYPE=uuid    REF=cart_service:Cart
+FIELD=state                   TYPE=string
+FIELD=total_minor_unit        TYPE=integer
+FIELD=currency_code           TYPE=string
+FIELD=idempotency_key         TYPE=string
+
+ENTITY=OrderLineItem
+OWNER=order_service
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+FIELD=order_id                TYPE=uuid    REF=order_service:Order
+FIELD=product_variant_id      TYPE=uuid    REF=catalog_service:ProductVariant
+FIELD=quantity                TYPE=integer
+FIELD=unit_price_minor_unit   TYPE=integer
+FIELD=currency_code           TYPE=string
+
+ENTITY=Discount
+OWNER=order_service
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+FIELD=order_id                TYPE=uuid    REF=order_service:Order
+FIELD=type                    TYPE=string
+FIELD=amount_minor_unit       TYPE=integer
+FIELD=currency_code           TYPE=string
+FIELD=application_order       TYPE=integer
+
+ENTITY=Coupon
+OWNER=order_service
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+FIELD=code                        TYPE=string
+FIELD=discount_type               TYPE=string
+FIELD=amount_minor_unit           TYPE=integer
+FIELD=currency_code               TYPE=string
+FIELD=single_use                  TYPE=boolean
+FIELD=redeemed_by_order_id        TYPE=uuid    REF=order_service:Order
+
+##################################################
+# STOREFRONT ENTITIES
+##################################################
+
+ENTITY=Customer
+OWNER=storefront
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+FIELD=email                   TYPE=string  DATA_SEC=restricted
+FIELD=phone                   TYPE=string  DATA_SEC=restricted
+FIELD=name                    TYPE=string
+FIELD=state                   TYPE=string
+
+ENTITY=Address
+OWNER=storefront
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+FIELD=customer_id             TYPE=uuid    REF=storefront:Customer
+FIELD=type                    TYPE=string
+FIELD=address_line_1          TYPE=string  DATA_SEC=restricted
+FIELD=address_line_2          TYPE=string  DATA_SEC=restricted
+FIELD=city                    TYPE=string  DATA_SEC=restricted
+FIELD=state_province          TYPE=string  DATA_SEC=restricted
+FIELD=postal_code             TYPE=string  DATA_SEC=restricted
+FIELD=country                 TYPE=string  DATA_SEC=restricted
+
+ENTITY=Review
+OWNER=storefront
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+FIELD=customer_id             TYPE=uuid    REF=storefront:Customer
+FIELD=product_id              TYPE=uuid    REF=catalog_service:Product
+FIELD=rating                  TYPE=integer
+FIELD=body                    TYPE=string
+FIELD=state                   TYPE=string
+
+##################################################
+# PAYMENT SERVICE ENTITIES
+##################################################
+
+ENTITY=Payment
+OWNER=payment_service
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+IMMUTABLE_AFTER_TERMINAL=true
+TERMINAL_STATES=captured,failed,refunded,voided
+FIELD=order_id                TYPE=uuid    REF=order_service:Order
+FIELD=amount_minor_unit       TYPE=integer
+FIELD=currency_code           TYPE=string
+FIELD=state                   TYPE=string
+FIELD=idempotency_key         TYPE=string
+FIELD=gateway_reference       TYPE=string
+
+ENTITY=PaymentIntent
+OWNER=payment_service
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+TERMINAL_STATES=authorized,expired,cancelled
+FIELD=order_id                TYPE=uuid    REF=order_service:Order
+FIELD=amount_minor_unit       TYPE=integer
+FIELD=currency_code           TYPE=string
+FIELD=state                   TYPE=string
+FIELD=payment_method_token    TYPE=string  DATA_SEC=restricted
+
+ENTITY=Refund
+OWNER=payment_service
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+TERMINAL_STATES=completed,failed
+FIELD=payment_id              TYPE=uuid    REF=payment_service:Payment
+FIELD=order_id                TYPE=uuid    REF=order_service:Order
+FIELD=amount_minor_unit       TYPE=integer
+FIELD=currency_code           TYPE=string
+FIELD=state                   TYPE=string
+FIELD=reason                  TYPE=string
+
+##################################################
+# FULFILLMENT SERVICE ENTITIES
+##################################################
+
+ENTITY=Fulfillment
+OWNER=fulfillment_service
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+TERMINAL_STATES=delivered,returned
+FIELD=order_id                TYPE=uuid    REF=order_service:Order
+FIELD=state                   TYPE=string
+FIELD=tracking_number         TYPE=string
+FIELD=carrier                 TYPE=string
+
+ENTITY=FulfillmentItem
+OWNER=fulfillment_service
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+FIELD=fulfillment_id          TYPE=uuid    REF=fulfillment_service:Fulfillment
+FIELD=order_line_item_id      TYPE=uuid    REF=order_service:OrderLineItem
+FIELD=quantity                TYPE=integer
+FIELD=state                   TYPE=string

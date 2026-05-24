@@ -1,0 +1,161 @@
+# kiro-suite/kiro-ext-pkgs/domains/ecommerce/roles.ki
+
+META:
+NAME=ecommerce_roles
+VERSION=1.0.0
+PURPOSE=domain_scoped_role_extensions_for_ecommerce_context
+SCOPE=all_ecommerce_systems
+MODE=machine_first
+FORMAT=directive_rules_priority_flags
+PARENT=kiro-core@1
+LAYER=tertiary
+DEPENDS_ON=kiro-roles/_index.ki
+
+##################################################
+# GLOBAL MERGE AND PERMISSION POLICY
+##################################################
+
+MERGE_POLICY=base_takes_precedence_on_conflict
+PERMISSION_MODEL=deny_by_default
+RULE=unlisted_role_in_ecommerce_context->apply_deny_by_default_require_explicit_domain_grant
+
+NOTE=each_role_extension_merges_with_its_base_kiro-roles_definition
+NOTE=base_kiro-roles_definition_takes_precedence_on_any_conflict
+NOTE=domain_extensions_only_add_constraints_never_relax_base_role_permissions
+NOTE=ai_agent_operating_in_ecommerce_context_must_load_base_role_plus_this_extension
+
+##################################################
+# ROLE EXTENSIONS
+##################################################
+
+# -----------------------------------------------
+### role extension: be_e (backend engineer)
+# -----------------------------------------------
+ROLE_EXTENSION=be_e
+BASE=kiro-roles/roles/be_e.ki
+MERGE_POLICY=base_takes_precedence_on_conflict
+DOMAIN_FORBIDDEN=generate_floating_point_price_fields
+DOMAIN_FORBIDDEN=generate_inventory_decrement_without_lock
+DOMAIN_ESC=inventory_oversell_detected
+
+# -----------------------------------------------
+### role extension: fe_e (frontend engineer)
+# -----------------------------------------------
+ROLE_EXTENSION=fe_e
+BASE=kiro-roles/roles/fe_e.ki
+MERGE_POLICY=base_takes_precedence_on_conflict
+DOMAIN_FORBIDDEN=store_payment_token_in_browser_storage
+DOMAIN_FORBIDDEN=render_raw_card_data_in_ui
+DOMAIN_ESC=pci_violation_signal
+
+# -----------------------------------------------
+### role extension: sec (security engineer)
+# -----------------------------------------------
+ROLE_EXTENSION=sec
+BASE=kiro-roles/roles/sec.ki
+MERGE_POLICY=base_takes_precedence_on_conflict
+DOMAIN_FORBIDDEN=approve_payment_logic_without_fraud_signal_check
+DOMAIN_ESC=pci_violation_signal
+DOMAIN_ESC=gdpr_pii_exposure_detected
+SIGNOFF_REQUIRED=payment_processing_logic
+SIGNOFF_REQUIRED=pii_access_logic
+
+# -----------------------------------------------
+### role extension: swe (software engineer)
+# -----------------------------------------------
+ROLE_EXTENSION=swe
+BASE=kiro-roles/roles/swe.ki
+MERGE_POLICY=base_takes_precedence_on_conflict
+DOMAIN_FORBIDDEN=hardcode_tax_rate_tables
+DOMAIN_FORBIDDEN=generate_shared_db_join_across_service_boundaries
+
+# -----------------------------------------------
+### role extension: arch (architect)
+# -----------------------------------------------
+ROLE_EXTENSION=arch
+BASE=kiro-roles/roles/arch.ki
+MERGE_POLICY=base_takes_precedence_on_conflict
+DOMAIN_FORBIDDEN=approve_state_machine_change_without_major_version_bump
+DOMAIN_ESC=cross_service_data_coupling_detected
+
+# -----------------------------------------------
+### role extension: tl (tech lead)
+# -----------------------------------------------
+ROLE_EXTENSION=tl
+BASE=kiro-roles/roles/tl.ki
+MERGE_POLICY=base_takes_precedence_on_conflict
+DOMAIN_FORBIDDEN=merge_entity_addition_without_minor_version_bump
+DOMAIN_ESC=entity_boundary_violation_detected
+
+# -----------------------------------------------
+### role extension: qa (quality assurance)
+# -----------------------------------------------
+ROLE_EXTENSION=qa
+BASE=kiro-roles/roles/qa.ki
+MERGE_POLICY=base_takes_precedence_on_conflict
+DOMAIN_FORBIDDEN=approve_checkout_flow_without_idempotency_key_verification
+DOMAIN_ESC=edge_case_failure_mode_unhandled
+
+# -----------------------------------------------
+### role extension: devops (devops engineer)
+# -----------------------------------------------
+ROLE_EXTENSION=devops
+BASE=kiro-roles/roles/devops.ki
+MERGE_POLICY=base_takes_precedence_on_conflict
+DOMAIN_FORBIDDEN=deploy_payment_service_without_pci_compliance_check
+DOMAIN_ESC=payment_service_degraded
+
+# -----------------------------------------------
+### role extension: sre (site reliability engineer)
+# -----------------------------------------------
+ROLE_EXTENSION=sre
+BASE=kiro-roles/roles/sre.ki
+MERGE_POLICY=base_takes_precedence_on_conflict
+DOMAIN_FORBIDDEN=disable_circuit_breaker_on_payment_gateway
+DOMAIN_ESC=payment_gateway_timeout_threshold_exceeded
+
+# -----------------------------------------------
+### role extension: pm (product manager)
+# -----------------------------------------------
+ROLE_EXTENSION=pm
+BASE=kiro-roles/roles/pm.ki
+MERGE_POLICY=base_takes_precedence_on_conflict
+DOMAIN_FORBIDDEN=approve_feature_bypassing_fraud_signal_evaluation
+DOMAIN_ESC=checkout_conversion_anomaly_detected
+
+# -----------------------------------------------
+### role extension: po (product owner)
+# -----------------------------------------------
+ROLE_EXTENSION=po
+BASE=kiro-roles/roles/po.ki
+MERGE_POLICY=base_takes_precedence_on_conflict
+DOMAIN_FORBIDDEN=accept_risk_on_pci_violation_without_sec_signoff
+DOMAIN_ESC=refund_rate_anomaly_detected
+
+# -----------------------------------------------
+### role extension: ba (business analyst)
+# -----------------------------------------------
+ROLE_EXTENSION=ba
+BASE=kiro-roles/roles/ba.ki
+MERGE_POLICY=base_takes_precedence_on_conflict
+DOMAIN_FORBIDDEN=define_discount_logic_without_declared_application_order
+DOMAIN_ESC=business_rule_conflict_detected
+
+# -----------------------------------------------
+### role extension: de (data engineer)
+# -----------------------------------------------
+ROLE_EXTENSION=de
+BASE=kiro-roles/roles/de.ki
+MERGE_POLICY=base_takes_precedence_on_conflict
+DOMAIN_FORBIDDEN=create_cross_service_db_view_joining_entity_tables
+DOMAIN_ESC=pii_data_pipeline_exposure_detected
+
+##################################################
+# ENFORCEMENT RULES
+##################################################
+
+RULE=ai_agent_operating_as_role_in_ecommerce_context->merge_base_role_with_domain_extension
+RULE=domain_extension_conflicts_with_base_role->base_role_takes_precedence_emit_conflict_signal
+RULE=role_not_listed_in_this_file_attempts_ecommerce_operation->apply_deny_by_default_require_explicit_domain_grant
+RULE=sec_signoff_required_for_payment_processing_logic->block_until_sec_approves
+RULE=sec_signoff_required_for_pii_access_logic->block_until_sec_approves

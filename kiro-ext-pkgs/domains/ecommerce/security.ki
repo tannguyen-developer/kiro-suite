@@ -1,0 +1,131 @@
+# kiro-suite/kiro-ext-pkgs/domains/ecommerce/security.ki
+
+META:
+NAME=ecommerce_security
+VERSION=1.0.0
+PURPOSE=pci_dss_and_gdpr_security_extensions_on_top_of_kiro-core_security
+SCOPE=all_ecommerce_systems
+MODE=machine_first
+FORMAT=directive_rules_priority_flags
+PARENT=kiro-core@1
+LAYER=tertiary
+DEPENDS_ON=kiro-core/security.ki
+EXTENDS=kiro-core/security.ki
+
+##################################################
+# GUARD DIRECTIVE
+##################################################
+
+# This pack may only add constraints, never relax any kiro-core security rule.
+# Any directive in this file that conflicts with kiro-core/security.ki is invalid
+# and will trigger CONFLICT_SIGNAL per _index.ki conflict detection rules.
+
+RULE=no_relaxation_of_kiro-core_security_rules
+
+NOTE=this_file_extends_kiro-core/security.ki_only_by_adding_constraints
+NOTE=no_kiro-core_security_rule_is_redeclared_redefined_or_weakened_here
+NOTE=override_policy=kiro-core_always_wins_applies_to_all_directives_in_this_file
+
+##################################################
+# PCI-DSS: RAW CARD DATA RULES
+##################################################
+
+# raw card data = PAN (primary account number), CVV, expiry date
+# These are block_critical — highest severity; halt agent execution immediately
+# and require sec role sign-off to unblock.
+
+RULE=raw_card_data_stored->block_critical
+RULE=raw_card_data_logged->block_critical
+RULE=card_data_passed_through_app_code->block_require_gateway_tokenization
+
+NOTE=raw_card_data_definition=PAN_primary_account_number_plus_CVV_plus_expiry_date
+NOTE=card_data_must_be_routed_exclusively_through_pci_compliant_payment_gateway_tokenization_flow
+NOTE=block_critical_severity_halts_agent_execution_and_requires_sec_signoff_to_unblock
+
+##################################################
+# DUAL AUTHORIZATION RULES
+##################################################
+
+# authn = customer or admin identity verified
+# authz = role permission check passed
+# Both must be present on all payment and refund mutations.
+
+RULE=payment_mutation_without_authn_and_authz->block
+RULE=refund_mutation_without_authn_and_authz->block
+EXTENDS=kiro-core/security.ki:IAM
+
+NOTE=authn_definition=customer_or_admin_identity_verified
+NOTE=authz_definition=role_permission_check_passed
+NOTE=both_authn_and_authz_required_not_either_alone
+
+##################################################
+# PII CLASSIFICATION RULES
+##################################################
+
+# PII fields must carry DATA_SEC=restricted classification.
+# Any PII field without this classification is blocked.
+
+PII_FIELDS=email,phone,address,payment_method_token
+RULE=pii_field_not_classified_restricted->block
+EXTENDS=kiro-core/security.ki:DATA_SEC
+
+NOTE=pii_fields_must_carry_DATA_SEC=restricted_classification
+NOTE=lower_classifications_public_internal_confidential_are_rejected_for_pii_fields
+NOTE=payment_method_token_is_pii_and_must_be_classified_restricted
+
+##################################################
+# AUDIT LOG RULES
+##################################################
+
+# All financial transaction mutations (payment, refund, order creation) must
+# produce append-only audit log entries. Reuses kiro-core audit rule without
+# modification; adds the financial mutation enforcement on top.
+
+REUSE=kiro-core/security.ki:AUDIT=log_all_critical_state_changes
+RULE=financial_mutation_without_audit_log->block
+AUDIT_LOG=append_only
+
+NOTE=financial_mutation_definition=payment_capture_refund_initiation_order_creation
+NOTE=audit_log_entries_must_be_append_only_no_update_or_delete_permitted
+NOTE=audit_entries_must_include_actor_identity_per_kiro-core/security.ki:AUDIT
+
+##################################################
+# ADMIN ENDPOINT RULES
+##################################################
+
+# Admin endpoints accessing order or payment data require MFA and rate limiting.
+# Extends kiro-core IAM MFA requirement with domain-specific scope.
+
+RULE=admin_order_or_payment_endpoint_without_mfa->block
+EXTENDS=kiro-core/security.ki:IAM=require_mfa_for_administrative_or_sensitive_access
+RULE=admin_endpoint_without_rate_limiting->block
+
+NOTE=admin_endpoint_scope=any_endpoint_accessing_order_or_payment_data_with_admin_role
+NOTE=rate_limiting_is_required_in_addition_to_mfa_not_as_an_alternative
+NOTE=reuses_kiro-core/security.ki:INFRA_SEC=implement_rate_limiting_and_abuse_protection
+
+##################################################
+# FRAUD SIGNAL RULE
+##################################################
+
+# Fraud signal evaluation is non-skippable before payment capture.
+# No payment capture logic may bypass Fraud_Signal assessment.
+
+RULE=payment_capture_without_fraud_signal_evaluation->block
+
+NOTE=fraud_signal_evaluation_is_non_skippable_step_before_payment_capture
+NOTE=fraud_signal_definition=computed_risk_score_or_rule_based_flag_attached_to_order_or_payment_intent
+NOTE=if_fraud_signal_score_exceeds_threshold_order_enters_pending_review_per_edge-cases.ki
+
+##################################################
+# SEC ROLE SIGN-OFF
+##################################################
+
+# Any change to this file requires sec role sign-off before merge.
+# Mirrors the versioning rule declared in _index.ki.
+
+RULE=security_ki_changed->require_sec_signoff_before_merge
+
+NOTE=sec_signoff_required_for_any_modification_to_this_file_before_merge
+NOTE=mirrors_kiro-ext-pkgs/domains/ecommerce/_index.ki:RULE=security_ki_changed->require_sec_signoff_before_merge
+NOTE=sec_role_definition=kiro-roles/roles/sec.ki

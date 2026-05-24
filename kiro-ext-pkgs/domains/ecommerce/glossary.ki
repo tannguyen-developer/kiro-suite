@@ -1,0 +1,179 @@
+# kiro-suite/kiro-ext-pkgs/domains/ecommerce/glossary.ki
+
+META:
+NAME=ecommerce_glossary
+VERSION=1.0.0
+PURPOSE=normalize_ecommerce_domain_terms_reduce_tokens_remove_ambiguity
+SCOPE=all_ecommerce_systems_all_ai_agents_operating_in_ecommerce_contexts
+MODE=machine_first
+FORMAT=directive_rules_priority_flags
+PARENT=kiro-core@1
+LAYER=tertiary
+
+DEPENDS_ON=kiro-core/glossary.ki
+EXTENDS=kiro-core/glossary.ki
+RULE=no_redefinition_of_kiro-core_terms
+NOTE=all_aliases_here_are_ecommerce-domain-specific_and_absent_from_kiro-core/glossary.ki
+NOTE=kiro-core_aliases_are_inherited_globally_and_not_repeated_here
+
+##################################################
+# DOMAIN CONCEPTS
+##################################################
+
+domain_pack=ki_file_collection_under_kiro-ext-pkgs_domains_extending_kiro-core_for_a_specific_business_vertical
+ecommerce_system=any_software_system_within_scope_of_this_domain_pack_storefront_cart_order_payment_fulfillment_catalog
+entity=named_business_object_with_defined_state_lifecycle_and_ownership
+state_machine=defined_set_of_valid_states_and_allowed_transitions_for_an_entity
+steering_file=ki_file_consumed_by_ai_agent_to_constrain_behavior_in_a_given_context
+idempotency_key=client_supplied_token_ensuring_mutation_produces_same_result_if_retried
+inventory_lock=temporary_reservation_of_stock_units_during_checkout_to_prevent_oversell
+payment_intent=pending_payment_authorization_record_prior_to_capture
+fulfillment_unit=shippable_parcel_derived_from_one_or_more_order_line_items
+refund=full_or_partial_reversal_of_a_captured_payment_linked_to_an_order
+fraud_signal=computed_risk_score_or_rule_based_flag_attached_to_order_or_payment_intent
+domain_constraint=rule_defined_in_this_pack_that_narrows_or_extends_a_kiro-core_rule_for_ecommerce_contexts
+override_policy=kiro-core_always_wins_this_pack_may_only_add_constraints_never_relax_them
+
+##################################################
+# SERVICE-NAME ALIASES
+##################################################
+
+storefront=b2c_or_b2b_customer_facing_web_or_mobile_application_and_customer_profile_service
+cart_svc=cart_service_owns_cart_and_cart_item_entities
+order_svc=order_service_owns_order_order_line_item_discount_and_coupon_entities
+payment_svc=payment_service_owns_payment_payment_intent_and_refund_entities
+fulfillment_svc=fulfillment_service_owns_fulfillment_and_fulfillment_item_entities
+catalog_svc=catalog_service_owns_product_product_variant_category_and_inventory_entities
+
+##################################################
+# STATE ALIASES — CART STATE MACHINE
+##################################################
+
+cart_active=cart_state_items_present_checkout_not_yet_initiated
+cart_abandoned=cart_state_session_expired_or_user_left_without_checkout
+cart_converted=cart_state_terminal_order_successfully_created_from_cart
+cart_expired=cart_state_terminal_ttl_elapsed_without_conversion_or_abandonment
+
+##################################################
+# STATE ALIASES — ORDER STATE MACHINE
+##################################################
+
+order_pending=order_state_created_awaiting_payment_confirmation
+order_confirmed=order_state_payment_authorized_order_accepted
+order_processing=order_state_fulfillment_in_progress
+order_shipped=order_state_fulfillment_unit_dispatched_to_carrier
+order_delivered=order_state_terminal_fulfillment_unit_received_by_customer
+order_cancelled=order_state_terminal_order_voided_before_delivery
+order_refunded=order_state_terminal_payment_reversed_after_delivery
+
+##################################################
+# STATE ALIASES — PAYMENT STATE MACHINE
+##################################################
+
+payment_pending=payment_state_awaiting_authorization_from_gateway
+payment_authorized=payment_state_funds_reserved_not_yet_captured
+payment_captured=payment_state_terminal_funds_transferred_to_merchant
+payment_failed=payment_state_terminal_authorization_or_capture_rejected
+payment_refunded=payment_state_terminal_captured_funds_reversed
+payment_voided=payment_state_terminal_authorization_cancelled_before_capture
+
+##################################################
+# STATE ALIASES — PAYMENT INTENT STATE MACHINE
+##################################################
+
+pi_created=payment_intent_state_record_initialized_awaiting_customer_action
+pi_pending=payment_intent_state_customer_action_in_progress
+pi_authorized=payment_intent_state_terminal_authorization_confirmed
+pi_expired=payment_intent_state_terminal_ttl_elapsed_without_authorization
+pi_cancelled=payment_intent_state_terminal_intent_voided_by_customer_or_system
+
+##################################################
+# STATE ALIASES — FULFILLMENT STATE MACHINE
+##################################################
+
+ff_pending=fulfillment_state_awaiting_warehouse_pick_instruction
+ff_picking=fulfillment_state_warehouse_staff_collecting_items
+ff_packed=fulfillment_state_items_packed_awaiting_carrier_pickup
+ff_shipped=fulfillment_state_parcel_handed_to_carrier_in_transit
+ff_delivered=fulfillment_state_terminal_parcel_received_by_customer
+ff_returned=fulfillment_state_terminal_parcel_returned_to_warehouse
+
+##################################################
+# STATE ALIASES — REFUND STATE MACHINE
+##################################################
+
+rfnd_pending=refund_state_request_received_awaiting_processing
+rfnd_processing=refund_state_reversal_submitted_to_payment_gateway
+rfnd_completed=refund_state_terminal_funds_returned_to_customer
+rfnd_failed=refund_state_terminal_reversal_rejected_by_gateway
+
+##################################################
+# STATE ALIASES — INVENTORY STATE MACHINE
+##################################################
+
+inv_available=inventory_state_units_in_stock_available_for_reservation
+inv_reserved=inventory_state_units_locked_for_active_checkout
+inv_depleted=inventory_state_zero_units_on_hand_no_active_lock
+inv_discontinued=inventory_state_terminal_sku_no_longer_sold
+
+##################################################
+# WORKFLOW STEP ALIASES — 6 CANONICAL FLOWS
+##################################################
+
+# browse_to_cart
+btc_catalog_search=workflow_step_customer_queries_product_catalog
+btc_product_detail=workflow_step_customer_views_product_detail_page
+btc_add_to_cart=workflow_step_customer_adds_product_to_cart_requires_soft_inventory_check
+btc_cart_view=workflow_step_customer_reviews_cart_contents
+
+# cart_to_checkout
+ctc_cart_review=workflow_step_customer_confirms_cart_items_before_checkout
+ctc_address_entry=workflow_step_customer_enters_or_selects_shipping_address
+ctc_shipping_selection=workflow_step_customer_selects_shipping_method
+ctc_order_preview=workflow_step_customer_reviews_order_summary_inventory_lock_acquired_here
+
+# checkout_to_payment
+ctp_payment_method_entry=workflow_step_customer_provides_payment_method_via_gateway_tokenization
+ctp_fraud_assessment=workflow_step_non_skippable_fraud_signal_evaluation_before_authorization
+ctp_payment_authorization=workflow_step_payment_gateway_reserves_funds
+ctp_order_confirmation=workflow_step_order_record_created_cart_converted_confirmation_sent
+
+# payment_to_fulfillment
+ptf_payment_capture=workflow_step_saga_step_1_funds_transferred_to_merchant
+ptf_inventory_decrement=workflow_step_saga_step_2_reserved_units_decremented_from_stock
+ptf_fulfillment_creation=workflow_step_saga_step_3_fulfillment_record_created_for_warehouse
+ptf_warehouse_notification=workflow_step_saga_step_4_warehouse_system_notified_to_pick_and_pack
+
+# fulfillment_to_delivery
+ftd_picking=workflow_step_warehouse_picks_items_for_order
+ftd_packing=workflow_step_warehouse_packs_items_into_fulfillment_unit
+ftd_dispatch=workflow_step_fulfillment_unit_handed_to_carrier
+ftd_in_transit=workflow_step_carrier_transporting_fulfillment_unit
+ftd_delivered=workflow_step_fulfillment_unit_received_by_customer
+
+# return_and_refund
+rar_return_request=workflow_step_customer_initiates_return_request
+rar_return_authorization=workflow_step_system_or_agent_approves_return
+rar_item_receipt=workflow_step_warehouse_confirms_receipt_of_returned_items
+rar_refund_initiation=workflow_step_refund_record_created_linked_to_original_payment
+rar_refund_capture=workflow_step_refund_submitted_to_gateway_requires_original_payment_in_captured_state
+
+##################################################
+# COMPLIANCE ALIASES
+##################################################
+
+pci_dss=payment_card_industry_data_security_standard_governs_card_data_handling
+gdpr=general_data_protection_regulation_governs_eu_customer_pii_handling
+pii=personally_identifiable_information_fields_email_phone_address_payment_method_token
+pan=primary_account_number_raw_card_number_must_never_be_stored_or_logged
+cvv=card_verification_value_must_never_be_stored_or_logged
+tokenization=replacement_of_raw_card_data_with_gateway_issued_opaque_token
+
+##################################################
+# SAGA PATTERN ALIASES
+##################################################
+
+saga=distributed_transaction_pattern_with_explicit_compensating_transactions_per_step
+compensating_txn=action_that_reverses_a_completed_saga_step_on_downstream_failure
+inventory_lock_step=saga_prerequisite_step_acquiring_inventory_lock_before_decrement
+payment_capture_step=saga_step_transferring_authorized_funds_to_merchant_with_compensate_payment_void

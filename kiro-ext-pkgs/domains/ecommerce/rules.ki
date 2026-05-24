@@ -1,0 +1,77 @@
+# kiro-suite/kiro-ext-pkgs/domains/ecommerce/rules.ki
+
+META:
+NAME=ecommerce_rules
+VERSION=1.0.0
+PURPOSE=ecommerce_specific_business_rule_constraints_for_ai_agent_steering
+SCOPE=all_ecommerce_systems
+MODE=machine_first
+FORMAT=directive_rules_priority_flags
+PARENT=kiro-core@1
+LAYER=tertiary
+DEPENDS_ON=kiro-ext-pkgs/domains/ecommerce/entities.ki
+DEPENDS_ON=kiro-ext-pkgs/domains/ecommerce/states.ki
+DEPENDS_ON=kiro-core/principles.ki
+
+##################################################
+# PRICING RULES
+##################################################
+
+RULE=price_field_type_float->block_require_integer_minor_unit
+RULE=price_field_type_decimal->block_require_integer_minor_unit
+RULE=price_field_type_double->block_require_integer_minor_unit
+RULE=price_field_missing_currency_code->block
+
+NOTE=price_fields_must_use_integer_minor_unit_representation_e.g._cents_for_USD_pence_for_GBP_not_floating_point_types
+NOTE=every_price_or_monetary_amount_field_must_be_accompanied_by_an_explicit_currency_code_field
+
+##################################################
+# INVENTORY RULES
+##################################################
+
+RULE=inventory_decrement_without_lock->block_require_inventory_lock_first
+REUSE=kiro-core/principles.ki:REL=idempotency_where_needed
+
+NOTE=inventory_lock_must_be_acquired_before_any_decrement_operation_to_prevent_oversell_in_concurrent_checkout_scenarios
+
+##################################################
+# DISCOUNT RULES
+##################################################
+
+RULE=discount_logic_without_declared_application_order->block
+DISCOUNT_ORDER=item_discount->cart_discount->coupon->tax
+
+NOTE=discount_application_order_is_mandatory_and_must_be_declared_explicitly_item_discounts_apply_first_then_cart_level_discounts_then_coupons_then_tax_is_calculated_on_the_discounted_subtotal
+
+##################################################
+# CHECKOUT IDEMPOTENCY RULES
+##################################################
+
+RULE=payment_mutation_without_idempotency_key->block
+RULE=order_creation_without_idempotency_key->block
+IDEMPOTENCY_KEY=required_on_all_payment_and_order_mutations
+REUSE=kiro-core/principles.ki:REL=idempotency_where_needed
+
+##################################################
+# MARKETPLACE RULES
+##################################################
+
+RULE=cart_contains_multi_seller_items->require_order_split_declaration_before_checkout
+
+NOTE=marketplace_carts_containing_items_from_multiple_sellers_must_declare_order_splitting_logic_before_checkout_proceeds_each_seller_segment_becomes_a_separate_order
+
+##################################################
+# TAX RULES
+##################################################
+
+RULE=hardcoded_tax_rate_table_detected->block_require_external_tax_service_call
+
+NOTE=tax_calculation_must_be_delegated_to_an_external_tax_service_call_ai_agents_must_not_generate_inline_hardcoded_tax_rate_tables_as_rates_vary_by_jurisdiction_and_change_over_time
+
+##################################################
+# CART-TO-ORDER ATOMICITY
+##################################################
+
+RULE=order_created_without_cart_converted->block
+
+NOTE=cart_must_atomically_transition_to_converted_state_when_an_order_is_created_from_it_creating_an_order_without_simultaneously_converting_the_cart_is_not_permitted
