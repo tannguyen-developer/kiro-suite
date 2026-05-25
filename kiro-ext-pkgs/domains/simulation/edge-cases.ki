@@ -1,0 +1,161 @@
+# kiro-suite/kiro-ext-pkgs/domains/simulation/edge-cases.ki
+
+META:
+NAME=simulation_edge_cases
+VERSION=1.0.0
+PURPOSE=failure_mode_and_edge_case_constraints_for_simulation_systems
+SCOPE=all_simulation_systems
+MODE=machine_first
+FORMAT=directive_rules_priority_flags
+PARENT=kiro-core@1
+LAYER=tertiary
+DEPENDS_ON=kiro-ext-pkgs/domains/simulation/entities.ki
+DEPENDS_ON=kiro-ext-pkgs/domains/simulation/states.ki
+DEPENDS_ON=kiro-ext-pkgs/domains/simulation/rules.ki
+DEPENDS_ON=kiro-ext-pkgs/domains/simulation/reliability.ki
+DEPENDS_ON=kiro-ext-pkgs/domains/simulation/workflows.ki
+
+##################################################
+# NUMERICAL SAFETY RULES (Requirements 6.1–6.7)
+##################################################
+
+RULE=simulation_loop_without_divergence_threshold_and_halt_condition->block
+
+NOTE=every_simulation_loop_must_declare_an_explicit_divergence_threshold_and_a_halt_condition_loops_without_these_declarations_are_blocked_per_Requirement_6.2
+NOTE=AI_agents_must_not_generate_simulation_loops_without_a_declared_divergence_threshold_and_halt_condition
+
+##################################################
+# BOUNDS VIOLATION (Req 6.3)
+##################################################
+
+RULE=State_Vector_component_exceeds_declared_bounds->enter_BOUNDS_VIOLATED_halt_execution
+
+NOTE=when_a_State_Vector_component_value_exceeds_its_declared_bounds_the_Simulation_Run_must_enter_BOUNDS_VIOLATED_state_and_halt_execution_rather_than_continuing_with_out_of_bounds_values
+NOTE=BOUNDS_VIOLATED_is_a_fatal_signal_that_transitions_the_Simulation_Run_to_failed_state_per_the_error_signal_table_below
+
+##################################################
+# NaN / INFINITY DETECTION (Req 6.4)
+##################################################
+
+RULE=NaN_or_infinity_in_State_Vector->halt_immediately_record_offending_component_and_time_step_transition_to_failed
+
+NOTE=NaN_or_infinity_values_in_a_State_Vector_are_treated_as_fatal_errors_the_Simulation_Run_must_halt_immediately_record_the_offending_component_and_time_step_and_transition_to_failed_state
+NOTE=AI_agents_must_not_generate_simulation_logic_that_propagates_NaN_or_infinity_silently_per_Requirement_6.4
+NOTE=the_failure_checkpoint_must_be_written_before_the_Simulation_Run_transitions_to_failed_per_reliability.ki:RULE=Simulation_Run_fails_mid_execution->write_failure_checkpoint_before_terminating
+
+##################################################
+# TIME-STEP STABILITY WARNING (Req 6.5)
+##################################################
+
+RULE=time_stepped_simulation_Time_Step_violates_Nyquist_equivalent_stability_criterion->emit_STABILITY_WARNING_before_run_initiation
+
+NOTE=when_a_time_stepped_simulation_declares_a_Time_Step_that_is_too_large_relative_to_the_system_fastest_dynamics_violating_the_Nyquist_equivalent_stability_criterion_the_system_must_emit_STABILITY_WARNING_before_run_initiation
+NOTE=STABILITY_WARNING_is_a_warning_signal_the_run_may_proceed_with_explicit_acknowledgment_per_the_error_signal_table_below
+NOTE=the_STABILITY_WARNING_must_be_emitted_before_run_initiation_not_after_the_run_has_started
+
+##################################################
+# SCALE THRESHOLD EXCEEDED (Req 6.6)
+##################################################
+
+RULE=agent_count_or_event_count_exceeds_declared_scale_threshold->emit_SCALE_THRESHOLD_EXCEEDED_before_continuing
+
+NOTE=when_the_number_of_active_Agent_instances_or_queued_Event_instances_exceeds_the_declared_scale_threshold_the_system_must_emit_SCALE_THRESHOLD_EXCEEDED_before_continuing_not_after_failure
+NOTE=SCALE_THRESHOLD_EXCEEDED_is_a_warning_signal_that_must_be_emitted_proactively_before_the_run_continues_per_Requirement_6.6
+NOTE=large_scale_simulations_must_declare_a_performance_budget_and_a_termination_condition_per_Requirement_6.6
+
+##################################################
+# TERMINATION CONDITION REQUIRED (Req 6.6)
+##################################################
+
+RULE=simulation_loop_without_declared_termination_condition->block
+
+NOTE=every_simulation_loop_must_declare_an_explicit_termination_condition_unbounded_simulation_loops_without_a_declared_termination_condition_are_blocked
+NOTE=AI_agents_must_not_generate_unbounded_simulation_loops_per_Requirement_6.6
+
+##################################################
+# PERFORMANCE BUDGET EXCEEDED (Req 6.7)
+##################################################
+
+RULE=Simulation_Run_exceeds_declared_performance_budget->emit_BUDGET_EXCEEDED_write_checkpoint_allow_graceful_halt
+
+NOTE=when_a_Simulation_Run_exceeds_its_declared_performance_budget_the_run_must_emit_BUDGET_EXCEEDED_write_a_checkpoint_and_allow_graceful_halt_rather_than_hard_termination
+NOTE=BUDGET_EXCEEDED_is_a_warning_signal_that_triggers_checkpoint_write_and_graceful_halt_per_the_error_signal_table_below
+NOTE=hard_termination_without_checkpoint_on_budget_overrun_is_blocked_per_Requirement_6.7
+
+##################################################
+# MODEL DIVERGENCE AND DRIFT RULES (Requirements 12.1–12.8)
+##################################################
+
+RULE=Simulation_Run_output_diverges_from_Validation_Dataset_beyond_tolerance->flag_VALIDATION_FAILED_block_downstream_use
+
+NOTE=when_Simulation_Run_output_diverges_from_the_Validation_Dataset_by_more_than_the_declared_tolerance_threshold_the_run_must_be_flagged_VALIDATION_FAILED_and_any_downstream_use_of_the_run_output_must_be_blocked
+NOTE=VALIDATION_FAILED_is_a_blocking_signal_the_run_remains_in_completed_state_but_is_flagged_and_blocked_from_downstream_promotion_per_Requirement_12.3
+
+##################################################
+# STOCHASTIC DRIFT DETECTION (Req 12.4)
+##################################################
+
+RULE=stochastic_run_produces_statistically_inconsistent_results_across_seeds->emit_DRIFT_DETECTED_trigger_model_review
+
+NOTE=when_a_stochastic_Simulation_Run_produces_statistically_inconsistent_results_across_repeated_runs_with_different_seeds_indicating_non_deterministic_drift_the_system_must_emit_DRIFT_DETECTED_and_trigger_model_review
+NOTE=DRIFT_DETECTED_is_a_warning_signal_that_does_not_block_the_current_run_but_requires_model_review_per_Requirement_12.4
+
+##################################################
+# ASSUMPTION VIOLATED (Req 12.6)
+##################################################
+
+RULE=Assumption_violated_during_Simulation_Run->emit_ASSUMPTION_VIOLATED_pause_for_human_review
+
+NOTE=when_an_Assumption_is_found_to_be_violated_during_a_Simulation_Run_e.g._a_boundary_condition_is_breached_the_run_must_emit_ASSUMPTION_VIOLATED_and_pause_for_human_review_rather_than_continuing_silently
+NOTE=ASSUMPTION_VIOLATED_is_a_blocking_signal_that_pauses_the_run_and_requires_human_review_before_resuming_per_Requirement_12.6
+NOTE=the_run_must_not_continue_silently_after_an_Assumption_violation_is_detected
+
+##################################################
+# ASSUMPTION UNVERIFIED (Req 12.7)
+##################################################
+
+RULE=Assumption_cannot_be_verified_against_Validation_Dataset->flag_ASSUMPTION_UNVERIFIED_block_VALIDATED_promotion
+
+NOTE=any_Assumption_that_cannot_be_verified_against_the_Validation_Dataset_must_be_flagged_ASSUMPTION_UNVERIFIED_before_the_run_is_promoted_to_VALIDATED_status
+NOTE=ASSUMPTION_UNVERIFIED_is_a_blocking_signal_that_blocks_promotion_to_VALIDATED_status_per_Requirement_12.7
+
+##################################################
+# CALIBRATION PARAMETER RANGE VIOLATION (Req 12.8)
+##################################################
+
+RULE=Calibration_Config_produces_parameter_values_outside_declared_valid_range->block_run_initiation_require_parameter_range_correction
+
+NOTE=when_a_Calibration_Config_produces_parameter_values_outside_the_declared_valid_range_the_Simulation_Run_must_be_blocked_from_initiating_and_parameter_range_correction_must_be_required
+NOTE=this_rule_extends_entities.ki:RULE=Calibration_Config_parameter_outside_declared_range->block_run_initiation_with_the_additional_requirement_for_explicit_parameter_range_correction
+
+##################################################
+# SILENT ASSUMPTION PROPAGATION (Req 12.7)
+##################################################
+
+RULE=incorrect_Assumption_propagates_silently->block_flag_ASSUMPTION_UNVERIFIED
+
+NOTE=incorrect_assumptions_must_not_propagate_silently_through_a_Simulation_Run_any_Assumption_that_cannot_be_verified_must_be_flagged_ASSUMPTION_UNVERIFIED_before_the_run_is_promoted
+NOTE=AI_agents_must_not_generate_simulation_logic_that_allows_unverified_assumptions_to_propagate_without_flagging_per_Requirement_12.7
+
+##################################################
+# ERROR SIGNAL FORMAT TABLE
+##################################################
+
+NOTE=the_following_table_declares_all_error_signals_emitted_by_the_simulation_domain_pack_with_their_severity_and_required_action
+NOTE=severity_levels_are_fatal_blocking_warning_and_error
+NOTE=fatal_signals_halt_the_Simulation_Run_immediately_and_transition_to_failed_state
+NOTE=blocking_signals_prevent_promotion_or_pause_the_run_pending_human_review
+NOTE=warning_signals_emit_a_signal_and_allow_the_run_to_proceed_with_explicit_acknowledgment
+NOTE=error_signals_reject_the_operation_and_surface_the_error_to_the_operator
+
+ERROR_SIGNAL=BOUNDS_VIOLATED                SEVERITY=fatal      ACTION=halt_Simulation_Run_transition_to_failed
+ERROR_SIGNAL=NaN_or_infinity_in_State_Vector SEVERITY=fatal     ACTION=halt_immediately_record_offending_component_and_time_step_transition_to_failed
+ERROR_SIGNAL=VALIDATION_FAILED              SEVERITY=blocking   ACTION=block_downstream_promotion_run_remains_completed_but_flagged
+ERROR_SIGNAL=STABILITY_WARNING              SEVERITY=warning    ACTION=emit_before_run_initiation_run_may_proceed_with_explicit_acknowledgment
+ERROR_SIGNAL=BUDGET_EXCEEDED                SEVERITY=warning    ACTION=emit_signal_write_checkpoint_allow_graceful_halt
+ERROR_SIGNAL=DRIFT_DETECTED                 SEVERITY=warning    ACTION=emit_signal_trigger_model_review_do_not_block_current_run
+ERROR_SIGNAL=SCALE_THRESHOLD_EXCEEDED       SEVERITY=warning    ACTION=emit_before_continuing_not_after_failure
+ERROR_SIGNAL=ASSUMPTION_VIOLATED            SEVERITY=blocking   ACTION=pause_run_require_human_review_before_resuming
+ERROR_SIGNAL=ASSUMPTION_UNVERIFIED          SEVERITY=blocking   ACTION=block_promotion_to_VALIDATED_status
+ERROR_SIGNAL=VALIDATION_DEFERRED            SEVERITY=warning    ACTION=require_explicit_justification_do_not_block_run_initiation
+ERROR_SIGNAL=UNVERIFIED_BEHAVIOR            SEVERITY=blocking   ACTION=flag_emergent_behavior_require_human_review

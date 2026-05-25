@@ -1,0 +1,213 @@
+# kiro-suite/kiro-ext-pkgs/domains/simulation/entities.ki
+
+META:
+NAME=simulation_entities
+VERSION=1.0.0
+PURPOSE=canonical_entity_model_ownership_boundaries_and_cross_service_reference_rules
+SCOPE=all_simulation_systems
+MODE=machine_first
+FORMAT=directive_rules_priority_flags
+PARENT=kiro-core@1
+LAYER=tertiary
+DEPENDS_ON=kiro-core/architecture.ki
+DEPENDS_ON=kiro-ext-pkgs/domains/simulation/glossary.ki
+
+##################################################
+# GLOBAL ENTITY POLICIES
+##################################################
+
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+
+RULE=entity_missing_required_audit_fields->block
+RULE=cross_service_embedded_object_detected->block_require_id_reference
+REUSE=kiro-core/architecture.ki:RULE=cross_domain_data_join
+
+NOTE=all_entities_inherit_REQUIRED_FIELDS_and_CROSS_REF_POLICY_declared_above
+NOTE=cross_service_references_must_use_id_field_pattern_never_embedded_objects
+NOTE=id_field_type_is_uuid_unless_otherwise_declared_by_consuming_service
+
+##################################################
+# CRITICAL ENTITY CONSTRAINT RULES
+##################################################
+
+RULE=Model_without_linked_Assumption->block_run_initiation
+RULE=Model_without_Validation_Dataset_reference->emit_VALIDATION_DEFERRED_warning_require_justification
+RULE=State_Vector_mutation_after_terminal_run->block
+RULE=Observation_modification_or_deletion->block
+RULE=Simulation_Run_model_version_floating_reference->block_require_pinned_version
+RULE=Calibration_Config_parameter_outside_declared_range->block_run_initiation
+
+NOTE=Model_requires_at_least_one_linked_Assumption_before_Simulation_Run_may_be_initiated
+NOTE=Validation_Dataset_reference_is_recommended_omission_requires_VALIDATION_DEFERRED_flag_with_justification
+NOTE=State_Vector_is_immutable_after_Simulation_Run_reaches_terminal_state
+NOTE=Observation_records_are_append_only_modification_and_deletion_are_blocked
+NOTE=model_version_must_be_pinned_at_Simulation_Run_creation_time_floating_references_are_blocked
+NOTE=Calibration_Config_parameter_values_outside_declared_valid_range_block_run_initiation
+
+##################################################
+# SIMULATION ENGINE ENTITIES
+##################################################
+
+ENTITY=Model
+OWNER=simulation_engine
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+FIELD=name                    TYPE=string
+FIELD=version                 TYPE=string
+FIELD=simulation_type         TYPE=string
+FIELD=time_semantics          TYPE=string
+FIELD=assumption_ids          TYPE=uuid[]   REF=simulation_engine:Assumption
+FIELD=state                   TYPE=string
+TERMINAL_STATES=deprecated
+NOTE=every_Model_must_have_at_least_one_linked_Assumption_declared_before_Simulation_Run_initiation
+NOTE=Model_without_linked_Assumption_is_considered_incomplete_and_blocks_run_initiation
+NOTE=simulation_type_must_be_one_of_SCOPE_IN_values_declared_in_index.ki
+
+ENTITY=Simulation_Run
+OWNER=simulation_engine
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+IMMUTABLE_AFTER_TERMINAL=true
+TERMINAL_STATES=completed,failed,cancelled
+FIELD=model_id                TYPE=uuid     REF=simulation_engine:Model
+FIELD=model_version           TYPE=string   PINNED=true
+FIELD=parameter_set_id        TYPE=uuid     REF=simulation_engine:Parameter_Set
+FIELD=seed                    TYPE=string
+FIELD=run_hash                TYPE=string
+FIELD=state                   TYPE=string
+FIELD=software_version        TYPE=string
+NOTE=model_version_is_pinned_at_creation_time_floating_references_are_blocked
+NOTE=run_hash_is_computed_from_parameter_set_id_plus_seed_plus_model_id_plus_model_version_plus_software_version
+NOTE=run_hash_is_immutable_after_creation_and_enables_deduplication_and_audit
+NOTE=seed_is_required_for_stochastic_runs_to_enable_reproducibility
+
+ENTITY=State_Vector
+OWNER=simulation_engine
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+IMMUTABLE_AFTER_TERMINAL=true
+IMMUTABLE_AFTER_TERMINAL_REF=Simulation_Run:TERMINAL_STATES=completed,failed,cancelled
+FIELD=run_id                  TYPE=uuid     REF=simulation_engine:Simulation_Run
+FIELD=time_point              TYPE=string
+FIELD=components              TYPE=jsonb
+FIELD=is_terminal             TYPE=boolean
+NOTE=State_Vector_is_immutable_after_the_linked_Simulation_Run_reaches_a_terminal_state
+NOTE=mutation_of_State_Vector_after_terminal_run_is_blocked_per_RULE=State_Vector_mutation_after_terminal_run->block
+NOTE=components_is_a_map_of_state_variable_names_to_values_for_the_declared_time_point
+
+ENTITY=Agent
+OWNER=simulation_engine
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+FIELD=model_id                TYPE=uuid     REF=simulation_engine:Model
+FIELD=agent_type              TYPE=string
+FIELD=local_state             TYPE=jsonb
+FIELD=behavioral_rules_ref    TYPE=string
+NOTE=Agent_is_an_autonomous_entity_within_an_agent_based_simulation
+NOTE=behavioral_rules_ref_is_a_reference_to_the_declared_behavioral_rule_set_not_an_embedded_object
+
+ENTITY=Environment
+OWNER=simulation_engine
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+FIELD=model_id                TYPE=uuid     REF=simulation_engine:Model
+FIELD=global_state_variables  TYPE=jsonb
+FIELD=boundary_conditions     TYPE=jsonb
+NOTE=Environment_is_the_shared_context_in_which_Agents_operate
+NOTE=boundary_conditions_define_the_limits_within_which_State_Vector_components_must_remain
+
+ENTITY=Event
+OWNER=simulation_engine
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+FIELD=run_id                  TYPE=uuid     REF=simulation_engine:Simulation_Run
+FIELD=event_type              TYPE=string
+FIELD=scheduled_time          TYPE=string
+FIELD=payload                 TYPE=jsonb
+NOTE=Event_is_a_discrete_occurrence_at_a_specific_simulation_time_that_triggers_state_transitions
+NOTE=used_in_event_driven_and_hybrid_time_semantic_models
+
+ENTITY=Rules_Engine
+OWNER=simulation_engine
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+FIELD=model_id                TYPE=uuid     REF=simulation_engine:Model
+FIELD=rule_set_version        TYPE=string
+FIELD=evaluation_strategy     TYPE=string
+NOTE=Rules_Engine_evaluates_transition_rules_and_behavioral_policies_against_the_current_State_Vector
+NOTE=rule_set_version_must_be_pinned_to_ensure_reproducibility_across_Simulation_Run_instances
+
+ENTITY=Observation
+OWNER=simulation_engine
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+APPEND_ONLY=true
+FIELD=run_id                  TYPE=uuid     REF=simulation_engine:Simulation_Run
+FIELD=time_point              TYPE=string
+FIELD=state_snapshot          TYPE=jsonb
+FIELD=is_append_only          TYPE=boolean  CONSTANT=true
+NOTE=Observation_records_are_append_only_modification_and_deletion_are_blocked
+NOTE=is_append_only_is_always_true_and_must_not_be_set_to_false
+NOTE=Observation_write_must_complete_before_execution_loop_advances_to_next_time_step_or_event
+
+ENTITY=Calibration_Config
+OWNER=simulation_engine
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+TERMINAL_STATES=completed,failed
+FIELD=model_id                TYPE=uuid     REF=simulation_engine:Model
+FIELD=parameter_ranges        TYPE=jsonb
+FIELD=calibration_method      TYPE=string
+FIELD=state                   TYPE=string
+NOTE=parameter_ranges_declares_the_valid_min_max_bounds_for_each_calibration_parameter
+NOTE=parameter_values_outside_declared_range_block_Simulation_Run_initiation
+NOTE=Calibration_is_a_first_class_lifecycle_phase_distinct_from_initialization_and_execution
+
+ENTITY=Assumption
+OWNER=simulation_engine
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+FIELD=model_id                TYPE=uuid     REF=simulation_engine:Model
+FIELD=description             TYPE=string
+FIELD=assumption_type         TYPE=string
+FIELD=is_verified             TYPE=boolean
+NOTE=every_Model_requires_at_least_one_linked_Assumption_entity
+NOTE=Assumption_must_be_declared_before_Simulation_Run_is_initiated
+NOTE=unverified_Assumption_blocks_promotion_to_VALIDATED_status
+
+ENTITY=Validation_Dataset
+OWNER=simulation_engine
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+FIELD=model_id                TYPE=uuid     REF=simulation_engine:Model
+FIELD=dataset_ref             TYPE=string
+FIELD=tolerance_threshold     TYPE=string
+FIELD=version                 TYPE=string
+NOTE=Validation_Dataset_is_a_reference_dataset_of_known_real_world_outputs_used_to_verify_Model_fidelity
+NOTE=tolerance_threshold_declares_the_maximum_acceptable_divergence_between_simulation_output_and_reference_data
+NOTE=Model_without_Validation_Dataset_reference_requires_VALIDATION_DEFERRED_flag_with_justification
+
+ENTITY=Experiment
+OWNER=simulation_engine
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+TERMINAL_STATES=completed,failed
+FIELD=model_id                TYPE=uuid     REF=simulation_engine:Model
+FIELD=run_ids                 TYPE=uuid[]   REF=simulation_engine:Simulation_Run
+FIELD=parameter_sweep_config  TYPE=jsonb
+FIELD=state                   TYPE=string
+NOTE=Experiment_groups_multiple_Simulation_Run_instances_for_parameter_sweep_or_comparative_analysis
+NOTE=run_ids_references_all_Simulation_Run_instances_belonging_to_this_Experiment
+
+ENTITY=Parameter_Set
+OWNER=simulation_engine
+REQUIRED_FIELDS=id,created_at,updated_at,version
+CROSS_REF_POLICY=id_only_no_embedded_objects
+FIELD=model_id                TYPE=uuid     REF=simulation_engine:Model
+FIELD=parameters              TYPE=jsonb
+FIELD=version                 TYPE=string
+FIELD=is_pinned               TYPE=boolean
+NOTE=Parameter_Set_must_be_pinned_at_Simulation_Run_creation_time_to_ensure_reproducibility
+NOTE=parameters_is_a_map_of_parameter_names_to_declared_values
+NOTE=is_pinned_must_be_true_for_any_Parameter_Set_bound_to_a_Simulation_Run

@@ -1,0 +1,161 @@
+# kiro-suite/kiro-ext-pkgs/domains/simulation/roles.ki
+
+META:
+NAME=simulation_roles
+VERSION=1.0.0
+PURPOSE=domain_scoped_role_extensions_for_simulation_context
+SCOPE=all_simulation_systems
+MODE=machine_first
+FORMAT=directive_rules_priority_flags
+PARENT=kiro-core@1
+LAYER=tertiary
+DEPENDS_ON=kiro-roles/_index.ki
+
+##################################################
+# GLOBAL MERGE AND PERMISSION POLICY
+##################################################
+
+MERGE_POLICY=base_takes_precedence_on_conflict
+PERMISSION_MODEL=deny_by_default
+RULE=unlisted_role_in_simulation_context->apply_deny_by_default_require_explicit_domain_grant
+
+NOTE=each_role_extension_merges_with_its_base_kiro-roles_definition
+NOTE=base_kiro-roles_definition_takes_precedence_on_any_conflict
+NOTE=domain_extensions_only_add_constraints_never_relax_base_role_permissions
+NOTE=ai_agent_operating_in_simulation_context_must_load_base_role_plus_this_extension
+
+##################################################
+# ROLE CATEGORY INTEGRATION (Requirement 13.7)
+##################################################
+
+# CAT_05 — data/AI/ML roles: primary simulation engineering roles
+ROLE_CATEGORY_INTEGRATION=CAT_05
+CAT_05_MEMBERS=de,ml_e,ai_e
+CAT_05_SIMULATION_DESIGNATION=primary_simulation_engineering_roles
+
+# CAT_04 — architecture and leadership: model governance roles
+ROLE_CATEGORY_INTEGRATION=CAT_04
+CAT_04_MEMBERS=arch,tl
+CAT_04_SIMULATION_DESIGNATION=model_governance_roles
+
+NOTE=CAT_05_roles_de_ml_e_ai_e_are_designated_primary_simulation_engineering_roles_per_kiro-roles/_index.ki
+NOTE=CAT_04_roles_arch_tl_are_designated_model_governance_roles_per_kiro-roles/_index.ki
+NOTE=role_category_designations_are_additive_and_do_not_override_base_kiro-roles_category_definitions
+
+##################################################
+# ROLE EXTENSIONS
+##################################################
+
+# -----------------------------------------------
+### role extension: arch (architect)
+# -----------------------------------------------
+ROLE_EXTENSION=arch
+BASE=kiro-roles/roles/arch.ki
+MERGE_POLICY=base_takes_precedence_on_conflict
+DOMAIN_FORBIDDEN=approve_new_Model_definition_without_arch_signoff
+DOMAIN_FORBIDDEN=approve_state_machine_change_without_major_version_bump
+DOMAIN_ESC=model_fidelity_deviation_detected
+SIGNOFF_REQUIRED=new_Model_definition
+SIGNOFF_REQUIRED=existing_model_state_machine_modification
+
+# -----------------------------------------------
+### role extension: tl (tech lead)
+# -----------------------------------------------
+ROLE_EXTENSION=tl
+BASE=kiro-roles/roles/tl.ki
+MERGE_POLICY=base_takes_precedence_on_conflict
+DOMAIN_FORBIDDEN=merge_entity_addition_without_minor_version_bump
+DOMAIN_ESC=entity_boundary_violation_detected
+
+# -----------------------------------------------
+### role extension: swe (software engineer)
+# -----------------------------------------------
+ROLE_EXTENSION=swe
+BASE=kiro-roles/roles/swe.ki
+MERGE_POLICY=base_takes_precedence_on_conflict
+DOMAIN_FORBIDDEN=generate_simulation_loop_without_divergence_check
+DOMAIN_FORBIDDEN=generate_simulation_loop_without_termination_condition
+DOMAIN_ESC=simulation_loop_divergence_threshold_exceeded
+
+# -----------------------------------------------
+### role extension: be_e (backend engineer)
+# -----------------------------------------------
+ROLE_EXTENSION=be_e
+BASE=kiro-roles/roles/be_e.ki
+MERGE_POLICY=base_takes_precedence_on_conflict
+DOMAIN_FORBIDDEN=generate_stochastic_model_without_seed_declaration
+DOMAIN_FORBIDDEN=generate_numerical_computation_without_explicit_precision_strategy
+DOMAIN_ESC=numerical_precision_violation_detected
+
+# -----------------------------------------------
+### role extension: de (data engineer)
+# -----------------------------------------------
+ROLE_EXTENSION=de
+BASE=kiro-roles/roles/de.ki
+MERGE_POLICY=base_takes_precedence_on_conflict
+DOMAIN_FORBIDDEN=create_cross_run_shared_mutable_state
+DOMAIN_ESC=run_isolation_violation_detected
+
+# -----------------------------------------------
+### role extension: ml_e (machine learning engineer)
+# -----------------------------------------------
+ROLE_EXTENSION=ml_e
+BASE=kiro-roles/roles/ml_e.ki
+MERGE_POLICY=base_takes_precedence_on_conflict
+DOMAIN_FORBIDDEN=substitute_ml_approximation_for_declared_model_without_assumption
+DOMAIN_ESC=unverified_behavior_detected
+
+# -----------------------------------------------
+### role extension: qa (quality assurance)
+# -----------------------------------------------
+ROLE_EXTENSION=qa
+BASE=kiro-roles/roles/qa.ki
+MERGE_POLICY=base_takes_precedence_on_conflict
+DOMAIN_FORBIDDEN=approve_run_without_validation_dataset_comparison
+DOMAIN_ESC=validation_dataset_divergence_threshold_exceeded
+
+# -----------------------------------------------
+### role extension: devops (devops engineer)
+# -----------------------------------------------
+ROLE_EXTENSION=devops
+BASE=kiro-roles/roles/devops.ki
+MERGE_POLICY=base_takes_precedence_on_conflict
+DOMAIN_FORBIDDEN=deploy_simulation_service_without_checkpoint_interval_configured
+DOMAIN_ESC=simulation_infrastructure_degraded
+
+# -----------------------------------------------
+### role extension: sre (site reliability engineer)
+# -----------------------------------------------
+ROLE_EXTENSION=sre
+BASE=kiro-roles/roles/sre.ki
+MERGE_POLICY=base_takes_precedence_on_conflict
+DOMAIN_FORBIDDEN=disable_divergence_detection_in_simulation_loop
+DOMAIN_ESC=simulation_run_budget_exceeded
+
+# -----------------------------------------------
+### role extension: ba (business analyst)
+# -----------------------------------------------
+ROLE_EXTENSION=ba
+BASE=kiro-roles/roles/ba.ki
+MERGE_POLICY=base_takes_precedence_on_conflict
+DOMAIN_FORBIDDEN=define_model_without_declared_Assumptions
+DOMAIN_ESC=model_assumption_gap_detected
+
+# -----------------------------------------------
+### role extension: pm (product manager)
+# -----------------------------------------------
+ROLE_EXTENSION=pm
+BASE=kiro-roles/roles/pm.ki
+MERGE_POLICY=base_takes_precedence_on_conflict
+DOMAIN_FORBIDDEN=approve_feature_that_bypasses_assumption_declaration
+DOMAIN_ESC=model_fidelity_requirement_deprioritized
+
+##################################################
+# ENFORCEMENT RULES
+##################################################
+
+RULE=ai_agent_operating_as_role_in_simulation_context->merge_base_role_with_domain_extension
+RULE=domain_extension_conflicts_with_base_role->base_role_takes_precedence_emit_conflict_signal
+RULE=role_not_listed_in_this_file_attempts_simulation_operation->apply_deny_by_default_require_explicit_domain_grant
+RULE=arch_signoff_required_for_new_Model_definition->block_until_arch_approves
+RULE=arch_signoff_required_for_existing_model_state_machine_modification->block_until_arch_approves

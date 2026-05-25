@@ -1,0 +1,120 @@
+# kiro-suite/kiro-ext-pkgs/domains/simulation/glossary.ki
+
+META:
+NAME=simulation_glossary
+VERSION=1.0.0
+PURPOSE=normalize_simulation_domain_terms_reduce_tokens_remove_ambiguity
+SCOPE=all_simulation_systems_all_ai_agents_operating_in_simulation_contexts
+MODE=machine_first
+FORMAT=directive_rules_priority_flags
+PARENT=kiro-core@1
+LAYER=tertiary
+
+DEPENDS_ON=kiro-core/glossary.ki
+EXTENDS=kiro-core/glossary.ki
+RULE=no_redefinition_of_kiro-core_terms
+NOTE=all_aliases_here_are_simulation-domain-specific_and_absent_from_kiro-core/glossary.ki
+NOTE=kiro-core_aliases_are_inherited_globally_and_not_repeated_here
+
+##################################################
+# DOMAIN CONCEPTS
+##################################################
+
+Domain_Pack=ki_file_collection_under_kiro-ext-pkgs_domains_extending_kiro-core_for_a_specific_business_vertical_or_technical_domain
+Simulation_System=any_software_system_within_scope_of_this_domain_pack_that_models_real_world_processes_through_computational_state_evolution_over_time
+Model=formal_representation_of_a_real_world_system_defined_by_entities_state_variables_transition_rules_and_time_semantics
+Fidelity=degree_to_which_a_Model_accurately_represents_the_behavior_of_the_real_world_system_it_simulates_correctness_of_model_takes_precedence_over_performance
+Simulation_Run=single_execution_of_a_Model_from_an_initial_state_through_a_defined_time_horizon_or_termination_condition
+State_Vector=complete_set_of_state_variables_that_fully_describes_a_Model_at_a_single_point_in_time
+Time_Step=discrete_unit_of_time_advancement_in_a_time_stepped_simulation_must_be_declared_explicitly
+Event=discrete_occurrence_at_a_specific_simulation_time_that_triggers_state_transitions_in_an_event_driven_simulation
+Agent=autonomous_entity_within_an_agent_based_simulation_that_holds_local_state_and_executes_behavioral_rules
+Environment=shared_context_in_which_Agents_operate_defines_global_state_variables_and_boundary_conditions
+Rules_Engine=component_that_evaluates_transition_rules_and_behavioral_policies_against_the_current_State_Vector
+Calibration=process_of_adjusting_Model_parameters_to_minimize_divergence_between_simulation_output_and_reference_data
+Seed=deterministic_initialization_value_for_a_pseudo_random_number_generator_required_for_reproducible_stochastic_runs
+Observation=recorded_snapshot_of_selected_state_variables_at_a_defined_time_point_or_event_boundary
+Validation_Dataset=reference_dataset_of_known_real_world_outputs_used_to_verify_Model_fidelity
+Assumption=explicit_documented_simplification_or_constraint_applied_to_a_Model_that_deviates_from_full_real_world_complexity
+Steering_File=ki_file_consumed_by_an_AI_agent_to_constrain_its_behavior_in_a_given_context
+Domain_Constraint=rule_defined_in_this_pack_that_narrows_or_extends_a_kiro-core_rule_for_simulation_contexts
+Override_Policy=kiro-core_always_wins_this_pack_may_only_add_constraints_never_relax_them
+LAYER=tertiary_depends_on_kiro-core_primary_and_kiro-roles_secondary
+
+##################################################
+# SIMULATION PARADIGM ACRONYMS
+##################################################
+
+DES=discrete_event_simulation_paradigm_where_state_changes_occur_only_at_discrete_event_times
+ABS=agent_based_simulation_paradigm_where_emergent_behavior_arises_from_individual_Agent_rules
+SD=system_dynamics_simulation_paradigm_using_stocks_flows_and_feedback_loops_to_model_aggregate_behavior
+
+##################################################
+# TIME SEMANTICS (Requirement 2.1)
+##################################################
+
+# Three supported time semantics — all simulation models must declare exactly one
+# (or hybrid if combining both)
+
+time_stepped=time_semantic_fixed_Time_Step_advancement_state_updated_at_each_discrete_interval
+event_driven=time_semantic_state_changes_occur_only_at_Event_occurrence_no_fixed_interval
+hybrid=time_semantic_combination_of_time_stepped_and_event_driven_requires_explicit_synchronization_rules_between_the_two_time_domains
+
+RULE=simulation_model_without_declared_time_semantic->block_require_one_of_time_stepped_event_driven_hybrid
+RULE=hybrid_model_without_explicit_synchronization_rules->block_require_synchronization_declaration
+
+NOTE=time_stepped_uses_fixed_Time_Step_declared_explicitly_in_model_configuration
+NOTE=event_driven_advances_only_on_Event_occurrence_no_implicit_time_advancement
+NOTE=hybrid_must_declare_HYBRID_MODE=true_and_synchronization_rules_between_time_domains
+
+##################################################
+# MODELING APPROACH (Requirement 2.2)
+##################################################
+
+# Both deterministic and stochastic modeling are supported.
+# Stochastic models require a declared Seed for every Simulation_Run.
+
+deterministic=modeling_approach_where_identical_inputs_always_produce_identical_outputs_no_random_components
+stochastic=modeling_approach_where_outputs_include_random_components_requires_declared_Seed_for_every_Simulation_Run_to_enable_reproducibility
+
+MODELING_APPROACH_SUPPORTED=deterministic
+MODELING_APPROACH_SUPPORTED=stochastic
+
+RULE=stochastic_model_without_declared_Seed->block_require_Seed_declaration
+RULE=stochastic_PRNG_seeded_from_system_entropy_or_wall_clock->block_require_declared_Seed
+
+NOTE=stochastic_models_must_declare_Seed_for_every_Simulation_Run_to_enable_reproducibility
+NOTE=deterministic_models_produce_identical_output_given_identical_inputs_no_Seed_required
+
+##################################################
+# CALIBRATION AS FIRST-CLASS LIFECYCLE PHASE (Requirement 2.4)
+##################################################
+
+# Calibration is a first-class phase in the simulation lifecycle,
+# distinct from initialization and execution.
+
+LIFECYCLE_PHASE=initialization
+LIFECYCLE_PHASE=calibration
+LIFECYCLE_PHASE=execution
+
+CALIBRATION_PHASE=first_class_lifecycle_phase_distinct_from_initialization_and_execution
+CALIBRATION_PHASE_PURPOSE=adjust_Model_parameters_to_minimize_divergence_between_simulation_output_and_reference_data
+CALIBRATION_PHASE_ENTITY=Calibration_Config
+
+NOTE=Calibration_is_not_a_sub_step_of_initialization_or_execution_it_is_a_distinct_lifecycle_phase
+NOTE=Calibration_Config_entity_owns_the_calibration_phase_state_and_parameter_ranges
+NOTE=Calibration_phase_may_run_before_or_between_Simulation_Run_executions
+
+##################################################
+# CONFLICT RESOLUTION ALIAS (Requirement 1.4 / _index.ki:CONFLICT_RESOLUTION)
+##################################################
+
+# r01 is the domain-level conflict resolution procedure.
+# Referenced by: CONFLICT_RESOLUTION=escalate_per_glossary.ki:r01
+# When ambiguity arises in a domain rule, apply this procedure.
+
+r01=ambiguity_in_domain_rule->apply_glossary_resolution_procedure_surface_conflict_to_operator_halt_do_not_silently_resolve
+
+NOTE=r01_is_referenced_by_CONFLICT_RESOLUTION=escalate_per_glossary.ki:r01_in_index.ki
+NOTE=r01_mirrors_kiro-core_no_silent_resolution_policy
+NOTE=operator_must_resolve_ambiguity_explicitly_before_pack_is_considered_active
